@@ -5,6 +5,7 @@ import { api } from "../api";
 import TreeGraph from "../components/TreeGraph";
 import MemberDetail from "../components/MemberDetail";
 import AddMemberModal from "../components/AddMemberModal";
+import { formatDeathYear } from "../utils/memberDates";
 
 export default function TreePage() {
   const { treeId } = useParams();
@@ -138,12 +139,12 @@ export default function TreePage() {
                     </div>
                     <div>
                       <strong>{m.name}</strong>
-                      {(m.birthDate || m.deathDate) && (
-                        <span style={styles.dates}>
-                          {m.birthDate ? new Date(m.birthDate).getFullYear() : "?"}
-                          –{m.deathDate ? new Date(m.deathDate).getFullYear() : "?"}
-                        </span>
-                      )}
+                        {(m.birthDate || m.deathDate) && (
+                          <span style={styles.dates}>
+                            {m.birthDate ? new Date(m.birthDate).getFullYear() : "?"}
+                            –{formatDeathYear(m.deathDate)}
+                          </span>
+                        )}
                     </div>
                   </li>
                 ))}

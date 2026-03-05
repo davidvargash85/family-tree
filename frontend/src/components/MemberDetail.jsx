@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 
 export default function MemberDetail({ treeId, memberId, canEdit, onClose }) {
   const queryClient = useQueryClient();
@@ -124,7 +125,7 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose }) {
             <p style={styles.dates}>
               {member.birthDate ? new Date(member.birthDate).toLocaleDateString() : "?"}
               {" – "}
-              {member.deathDate ? new Date(member.deathDate).toLocaleDateString() : "Present"}
+              {formatDeathDate(member.deathDate)}
             </p>
           )}
           {member.bio && <p style={styles.bio}>{member.bio}</p>}
@@ -185,12 +186,14 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose }) {
 }
 
 function MemberEditForm({ member, onSave, onCancel, saving }) {
+  const isDeceased = member.deathDate != null && !isAliveSentinel(member.deathDate);
   const [name, setName] = useState(member.name);
   const [birthDate, setBirthDate] = useState(
     member.birthDate ? new Date(member.birthDate).toISOString().slice(0, 10) : ""
   );
+  const [deceased, setDeceased] = useState(isDeceased);
   const [deathDate, setDeathDate] = useState(
-    member.deathDate ? new Date(member.deathDate).toISOString().slice(0, 10) : ""
+    isDeceased && member.deathDate ? new Date(member.deathDate).toISOString().slice(0, 10) : ""
   );
   const [bio, setBio] = useState(member.bio ?? "");
 
@@ -199,7 +202,8 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
     onSave({
       name,
       birthDate: birthDate || null,
-      deathDate: deathDate || null,
+      deceased,
+      deathDate: deceased ? (deathDate || null) : null,
       bio: bio || null,
     });
   };
@@ -219,12 +223,24 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
         onChange={(e) => setBirthDate(e.target.value)}
         style={styles.input}
       />
-      <input
-        type="date"
-        value={deathDate}
-        onChange={(e) => setDeathDate(e.target.value)}
-        style={styles.input}
-      />
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          id="edit-member-deceased"
+          type="checkbox"
+          checked={deceased}
+          onChange={(e) => setDeceased(e.target.checked)}
+          style={{ width: 18, height: 18 }}
+        />
+        <label htmlFor="edit-member-deceased" style={{ fontSize: 14 }}>Deceased</label>
+      </div>
+      {deceased && (
+        <input
+          type="date"
+          value={deathDate}
+          onChange={(e) => setDeathDate(e.target.value)}
+          style={styles.input}
+        />
+      )}
       <textarea
         value={bio}
         onChange={(e) => setBio(e.target.value)}

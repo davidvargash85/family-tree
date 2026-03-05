@@ -10,39 +10,44 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-function getLayoutedElements(members, relationships) {
-  const memberIds = new Set(members.map((m) => m.id));
-  const rels = relationships.filter(
-    (r) => memberIds.has(r.memberAId) && memberIds.has(r.memberBId)
-  );
-  const nodes = members.map((m, i) => ({
-    id: m.id,
-    type: "default",
-    position: { x: (i % 4) * 220, y: Math.floor(i / 4) * 160 },
-    data: { label: m.name, photoUrl: m.photoUrl },
-  }));
-  const edges = rels.map((r) => ({
-    id: r.id,
-    source: r.memberAId,
-    target: r.memberBId,
-    type: "smoothstep",
-    label: r.type,
-    markerEnd: { type: MarkerType.ArrowClosed },
-  }));
-  return { nodes, edges };
-}
+import { getLayoutedElements } from "../utils/treeGraphLayout";
+import { nodeTypes } from "./TreeGraph/nodeTypes";
+
+const emptyStateStyle = {
+  padding: 40,
+  textAlign: "center",
+  color: "#6b7280",
+};
+
+const containerStyle = {
+  width: "100%",
+  height: "100%",
+  minHeight: 400,
+};
 
 function TreeGraphInner({ members, relationships, onNodeClick }) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => getLayoutedElements(members, relationships),
     [members, relationships]
   );
+
+  const edgesWithMarker = useMemo(
+    () =>
+      initialEdges.map((e) => ({
+        ...e,
+        markerEnd: { type: MarkerType.ArrowClosed },
+      })),
+    [initialEdges]
+  );
+
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(edgesWithMarker);
 
   useEffect(() => {
     setNodes(initialNodes);
-    setEdges(initialEdges);
+    setEdges(
+      initialEdges.map((e) => ({ ...e, markerEnd: { type: MarkerType.ArrowClosed } }))
+    );
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const onNodeClickHandler = useCallback(
@@ -51,14 +56,15 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
   );
 
   if (members.length === 0) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Add members to see the tree</div>;
+    return <div style={emptyStateStyle}>Add members to see the tree</div>;
   }
 
   return (
-    <div style={{ width: "100%", height: "100%", minHeight: 400 }}>
+    <div style={containerStyle}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClickHandler}
