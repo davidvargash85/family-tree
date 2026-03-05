@@ -51,7 +51,10 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const onNodeClickHandler = useCallback(
-    (_, node) => onNodeClick?.(node.id),
+    (event, node) => {
+      const rect = event?.currentTarget?.getBoundingClientRect?.();
+      onNodeClick?.(node.id, rect ?? null);
+    },
     [onNodeClick]
   );
 

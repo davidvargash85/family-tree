@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import TreeGraph from "../components/TreeGraph";
 import MemberDetail from "../components/MemberDetail";
+import MemberPopover from "../components/MemberPopover";
 import AddMemberModal from "../components/AddMemberModal";
 import { formatDeathYear } from "../utils/memberDates";
 
@@ -11,8 +12,18 @@ export default function TreePage() {
   const { treeId } = useParams();
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [popoverAnchorRect, setPopoverAnchorRect] = useState(null);
   const [view, setView] = useState("list");
   const [showAddMember, setShowAddMember] = useState(false);
+
+  const handleGraphNodeClick = (memberId, anchorRect) => {
+    setSelectedMemberId(memberId);
+    setPopoverAnchorRect(anchorRect ?? null);
+  };
+  const closePopover = () => {
+    setSelectedMemberId(null);
+    setPopoverAnchorRect(null);
+  };
 
   const { data: treeData, isLoading: treeLoading } = useQuery({
     queryKey: ["tree", treeId],
@@ -104,12 +115,21 @@ export default function TreePage() {
       </div>
 
       <div style={styles.viewArea}>
+        {view === "list" && selectedMemberId && (
+          <MemberDetail
+            placement="top"
+            treeId={treeId}
+            memberId={selectedMemberId}
+            canEdit={canEdit}
+            onClose={() => setSelectedMemberId(null)}
+          />
+        )}
         {view === "graph" ? (
           <div style={styles.graphWrap}>
             <TreeGraph
               members={members}
               relationships={relationships}
-              onNodeClick={setSelectedMemberId}
+              onNodeClick={handleGraphNodeClick}
             />
           </div>
         ) : (
@@ -163,12 +183,13 @@ export default function TreePage() {
         />
       )}
 
-      {selectedMemberId && (
-        <MemberDetail
+      {view === "graph" && selectedMemberId && (
+        <MemberPopover
           treeId={treeId}
           memberId={selectedMemberId}
           canEdit={canEdit}
-          onClose={() => setSelectedMemberId(null)}
+          onClose={closePopover}
+          anchorRect={popoverAnchorRect}
         />
       )}
     </div>

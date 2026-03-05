@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 
-export default function MemberDetail({ treeId, memberId, canEdit, onClose }) {
+export default function MemberDetail({ treeId, memberId, canEdit, onClose, placement = "side" }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
 
@@ -73,8 +73,15 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose }) {
 
   if (isLoading || !member) return null;
 
+  const panelStyle =
+    placement === "top"
+      ? { ...styles.panel, ...styles.panelOnTop }
+      : placement === "popover"
+        ? { ...styles.panel, ...styles.panelPopover }
+        : styles.panel;
+
   return (
-    <aside style={styles.panel}>
+    <aside style={panelStyle}>
       <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close">×</button>
 
       <div style={styles.photoWrap}>
@@ -311,6 +318,16 @@ const styles = {
     padding: 20,
     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
     position: "relative",
+  },
+  panelOnTop: {
+    width: "100%",
+    maxWidth: "none",
+    marginBottom: 16,
+    flexShrink: 0,
+  },
+  panelPopover: {
+    maxHeight: "85vh",
+    overflowY: "auto",
   },
   closeBtn: {
     position: "absolute",
