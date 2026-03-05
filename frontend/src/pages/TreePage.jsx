@@ -16,8 +16,8 @@ export default function TreePage() {
   const [view, setView] = useState("list");
   const [showAddMember, setShowAddMember] = useState(false);
 
-  const handleGraphNodeClick = (memberId, anchorRect) => {
-    setSelectedMemberId(memberId);
+  const handleGraphNodeClick = (nodeId, anchorRect, options) => {
+    setSelectedMemberId(options?.memberId ?? nodeId);
     setPopoverAnchorRect(anchorRect ?? null);
   };
   const closePopover = () => {

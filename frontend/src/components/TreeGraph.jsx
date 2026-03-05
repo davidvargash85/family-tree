@@ -12,6 +12,7 @@ import "reactflow/dist/style.css";
 
 import { getLayoutedElements } from "../utils/treeGraphLayout";
 import { nodeTypes } from "./TreeGraph/nodeTypes";
+import { TreeGraphSelectContext } from "./TreeGraph/TreeGraphSelectContext";
 
 const emptyStateStyle = {
   padding: 40,
@@ -53,9 +54,25 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
   const onNodeClickHandler = useCallback(
     (event, node) => {
       const rect = event?.currentTarget?.getBoundingClientRect?.();
-      onNodeClick?.(node.id, rect ?? null);
+      const memberId =
+        node.type === "couple" && node.data?.members?.[0]?.id
+          ? node.data.members[0].id
+          : node.id;
+      onNodeClick?.(node.id, rect ?? null, { memberId });
     },
     [onNodeClick]
+  );
+
+  const onMemberSelect = useCallback(
+    (memberId, rect) => {
+      onNodeClick?.(memberId, rect ?? null, { memberId });
+    },
+    [onNodeClick]
+  );
+
+  const selectContextValue = useMemo(
+    () => ({ onMemberSelect }),
+    [onMemberSelect]
   );
 
   if (members.length === 0) {
@@ -63,8 +80,9 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
   }
 
   return (
-    <div style={containerStyle}>
-      <ReactFlow
+    <TreeGraphSelectContext.Provider value={selectContextValue}>
+      <div style={containerStyle}>
+        <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
@@ -79,6 +97,7 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
         <MiniMap />
       </ReactFlow>
     </div>
+    </TreeGraphSelectContext.Provider>
   );
 }
 

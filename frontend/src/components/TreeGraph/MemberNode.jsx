@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Handle, Position } from "reactflow";
 import { Ribbon } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
 
-const card = {
+const cardBase = {
   padding: 10,
   borderRadius: 10,
   background: "#fff",
@@ -14,7 +15,15 @@ const card = {
   gap: 6,
   minWidth: 80,
   position: "relative",
+  transition: "border-color 0.15s ease, box-shadow 0.15s ease",
 };
+const cardHover = {
+  ...cardBase,
+  borderColor: "#93c5fd",
+  boxShadow: "0 2px 8px rgba(59, 130, 246, 0.2)",
+};
+/** @deprecated use cardBase/cardHover */
+const card = cardBase;
 const photoWrap = {
   position: "relative",
   flexShrink: 0,
@@ -60,6 +69,7 @@ export function MemberNode({ data }) {
   const label = data?.label ?? "";
   const photoUrl = data?.photoUrl;
   const deceased = data?.deathDate != null && !isAliveSentinel(data.deathDate);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <>
@@ -67,7 +77,11 @@ export function MemberNode({ data }) {
       <Handle type="source" position={Position.Top} id="top-source" />
       <Handle type="target" position={Position.Bottom} id="bottom-target" />
       <Handle type="source" position={Position.Bottom} id="bottom-source" />
-      <div style={card}>
+      <div
+        style={hovered ? cardHover : cardBase}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
         <div style={photoWrap}>
           {photoUrl ? (
             <img src={photoUrl} alt="" style={photo} />
