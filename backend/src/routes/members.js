@@ -27,6 +27,23 @@ membersRouter.get("/:treeId/members", requireTreeAccess(), async (req, res) => {
   return res.json({ members });
 });
 
+const MIN_SEARCH_LENGTH = 3;
+membersRouter.get("/:treeId/members/search", requireTreeAccess(), async (req, res) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (q.length < MIN_SEARCH_LENGTH) {
+    return res.status(400).json({ error: `Search query must be at least ${MIN_SEARCH_LENGTH} characters` });
+  }
+  const members = await prisma.member.findMany({
+    where: {
+      treeId: req.params.treeId,
+      name: { contains: q, mode: "insensitive" },
+    },
+    orderBy: { name: "asc" },
+    take: 20,
+  });
+  return res.json({ members });
+});
+
 membersRouter.post("/:treeId/members", requireEditor, async (req, res) => {
   const parsed = createMemberSchema.safeParse(req.body);
   if (!parsed.success) {

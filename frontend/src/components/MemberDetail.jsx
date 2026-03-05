@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
@@ -45,16 +45,6 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
     enabled: !!treeId,
   });
 
-  const { data: membersData } = useQuery({
-    queryKey: ["members", treeId],
-    queryFn: async () => {
-      const { data } = await api.get(`/trees/${treeId}/members`);
-      return data;
-    },
-    enabled: !!treeId,
-  });
-
-  const members = membersData?.members ?? [];
   const allRelationships = relsData?.relationships ?? [];
   const relationships = allRelationships.filter(
     (r) => r.memberAId === memberId || r.memberBId === memberId
@@ -242,10 +232,10 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
               })}
             </ul>
           )}
-          {canEdit && members.length > 1 && (
+          {canEdit && (
             <AddRelationshipForm
+              treeId={treeId}
               currentMemberId={memberId}
-              members={members}
               onSubmit={(body) => addRelationship.mutate(body)}
               isPending={addRelationship.isPending}
             />
@@ -331,43 +321,118 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
   );
 }
 
-function AddRelationshipForm({ currentMemberId, members, onSubmit, isPending }) {
+const DEBOUNCE_MS = 300;
+
+function AddRelationshipForm({ treeId, currentMemberId, onSubmit, isPending }) {
   const [otherId, setOtherId] = useState("");
+  const [selectedMemberName, setSelectedMemberName] = useState("");
   const [type, setType] = useState("spouse");
-  const others = members.filter((m) => m.id !== currentMemberId);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const searchTerm = debouncedQuery.trim();
+  const { data: searchData } = useQuery({
+    queryKey: ["members", "search", treeId, searchTerm],
+    queryFn: async () => {
+      const { data } = await api.get(`/trees/${treeId}/members/search`, {
+        params: { q: searchTerm },
+      });
+      return data;
+    },
+    enabled: !!treeId && searchTerm.length >= 3,
+  });
+
+  const searchResults = searchData?.members ?? [];
+  const others = searchResults.filter((m) => m.id !== currentMemberId);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!otherId) return;
-    // Parent–child can only be created from the parent: current person is always parent (memberA), selected is child (memberB).
     if (type === "parent") {
       onSubmit({ memberAId: currentMemberId, memberBId: otherId, type: "parent" });
     } else {
       onSubmit({ memberAId: currentMemberId, memberBId: otherId, type });
     }
     setOtherId("");
+    setSelectedMemberName("");
+    setSearchQuery("");
+    setDebouncedQuery("");
   };
+
+  const handleSelectMember = (m) => {
+    setOtherId(m.id);
+    setSelectedMemberName(m.name);
+    setSearchQuery("");
+  };
+
+  const handleClearSelection = () => {
+    setOtherId("");
+    setSelectedMemberName("");
+    setSearchQuery("");
+  };
+
+  const showList = !otherId && (searchQuery.length > 0 || others.length > 0);
 
   return (
     <form onSubmit={handleSubmit} style={styles.addRelForm}>
       <h4 style={styles.relsTitle}>Add relationship</h4>
-      <select
-        value={otherId}
-        onChange={(e) => setOtherId(e.target.value)}
-        required
-        style={styles.input}
-      >
-        <option value="">Select person</option>
-        {others.map((m) => (
-          <option key={m.id} value={m.id}>{m.name}</option>
-        ))}
-      </select>
+      <div style={styles.searchWrap}>
+        {otherId && selectedMemberName ? (
+          <div style={styles.selectedRow}>
+            <span style={styles.selectedName}>{selectedMemberName}</span>
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              style={styles.clearSelectionBtn}
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name..."
+              style={styles.input}
+              autoComplete="off"
+            />
+            {showList && (
+              <ul style={styles.searchResults}>
+                {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 ? (
+                  <li style={styles.searchResultItemMuted}>Type at least 3 characters to search</li>
+                ) : others.length === 0 ? (
+                  <li style={styles.searchResultItemMuted}>No matches</li>
+                ) : (
+                  others.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        style={styles.searchResultItem}
+                        onClick={() => handleSelectMember(m)}
+                      >
+                        {m.name}
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
       <select value={type} onChange={(e) => setType(e.target.value)} style={styles.input}>
         <option value="parent">Child (this person is the parent)</option>
         <option value="spouse">Spouse</option>
         <option value="sibling">Sibling</option>
       </select>
-      <button type="submit" disabled={isPending} style={styles.saveBtn}>
+      <button type="submit" disabled={isPending || !otherId} style={styles.saveBtn}>
         {isPending ? "Adding..." : "Add"}
       </button>
     </form>
@@ -454,6 +519,13 @@ const styles = {
   },
   relsTitle: { margin: "0 0 8px", fontSize: 14 },
   addRelForm: { marginTop: 12, paddingTop: 12, borderTop: "1px solid #eee", display: "flex", flexDirection: "column", gap: 8 },
+  searchWrap: { position: "relative" },
+  selectedRow: { display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, background: "#f9fafb" },
+  selectedName: { flex: 1, fontSize: 14 },
+  clearSelectionBtn: { background: "none", border: "none", color: "#2563eb", fontSize: 13, cursor: "pointer" },
+  searchResults: { listStyle: "none", margin: "4px 0 0", padding: 4, border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 200, overflowY: "auto", position: "relative", zIndex: 1 },
+  searchResultItem: { display: "block", width: "100%", padding: "8px 12px", textAlign: "left", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14, color: "#374151" },
+  searchResultItemMuted: { padding: "8px 12px", fontSize: 14, color: "#9ca3af" },
   muted: { margin: 0, fontSize: 13, color: "#6b7280" },
   relsList: { listStyle: "none", margin: 0, padding: 0 },
   relItem: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 14 },
