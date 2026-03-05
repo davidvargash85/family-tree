@@ -4,10 +4,10 @@
  */
 
 export const LAYOUT = {
-  NODE_WIDTH: 160,
-  NODE_HEIGHT: 72,
-  LEVEL_GAP: 120,
-  NODE_GAP: 24,
+  NODE_WIDTH: 110,
+  NODE_HEIGHT: 80,
+  LEVEL_GAP: 140,
+  NODE_GAP: 56,
 };
 
 /**
@@ -141,13 +141,17 @@ function buildEntitiesByLevel(members, levels, partnerMap) {
 }
 
 /**
- * Compute x,y positions per entity; center each level.
+ * Compute x,y positions per entity. Children are centered under their parent;
+ * siblings are grouped and spaced; overlaps are resolved.
  */
 function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId) {
   const { NODE_WIDTH, NODE_HEIGHT, LEVEL_GAP, NODE_GAP } = LAYOUT;
   const positionByEntity = {};
+  const slotWidth = NODE_WIDTH + NODE_GAP;
 
   entitiesByLevel.forEach(({ level, entityIds }, levelIndex) => {
+    const levelY = levelIndex * (NODE_HEIGHT + LEVEL_GAP);
+
     const withPreferredX = entityIds.map((entityId) => {
       const memberIds = entityId.startsWith("couple-")
         ? entityId.slice(7).split("-")
@@ -161,33 +165,65 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
         parentNodeIds.length > 0
           ? parentNodeIds.reduce((s, nid) => s + (positionByEntity[nid]?.x ?? 0), 0) /
             parentNodeIds.length
-          : (entityIds.indexOf(entityId) - (entityIds.length - 1) / 2) * (NODE_WIDTH + NODE_GAP);
+          : null;
       return { entityId, preferredX };
     });
-    withPreferredX.sort((a, b) => a.preferredX - b.preferredX);
-    const levelY = levelIndex * (NODE_HEIGHT + LEVEL_GAP);
-    withPreferredX.forEach(({ entityId }, i) => {
-      positionByEntity[entityId] = { x: i * (NODE_WIDTH + NODE_GAP), y: levelY };
+
+    const hasParents = withPreferredX.some((e) => e.preferredX != null);
+    if (!hasParents) {
+      withPreferredX.sort((a, b) => entityIds.indexOf(a.entityId) - entityIds.indexOf(b.entityId));
+      withPreferredX.forEach(({ entityId }, i) => {
+        const center = (entityIds.length - 1) / 2;
+        positionByEntity[entityId] = {
+          x: (i - center) * slotWidth,
+          y: levelY,
+        };
+      });
+      return;
+    }
+
+    withPreferredX.sort((a, b) => (a.preferredX ?? -1e9) - (b.preferredX ?? -1e9));
+
+    const groups = [];
+    const tolerance = 1;
+    let i = 0;
+    while (i < withPreferredX.length) {
+      const preferred = withPreferredX[i].preferredX;
+      const group = [];
+      while (
+        i < withPreferredX.length &&
+        (preferred == null
+          ? withPreferredX[i].preferredX == null
+          : withPreferredX[i].preferredX != null &&
+            Math.abs(withPreferredX[i].preferredX - preferred) < tolerance)
+      ) {
+        group.push(withPreferredX[i].entityId);
+        i++;
+      }
+      if (group.length)
+        groups.push({ preferredX: preferred ?? 0, entityIds: group });
+    }
+
+    let rightEdge = -Infinity;
+    groups.forEach(({ preferredX, entityIds: groupIds }) => {
+      const n = groupIds.length;
+      const totalWidth = (n - 1) * slotWidth + NODE_WIDTH;
+      let leftX = preferredX - totalWidth / 2;
+      if (leftX < rightEdge + NODE_GAP) {
+        leftX = rightEdge + NODE_GAP;
+      }
+      groupIds.forEach((entityId, j) => {
+        positionByEntity[entityId] = { x: leftX + j * slotWidth, y: levelY };
+      });
+      rightEdge = leftX + totalWidth;
     });
   });
 
-  const maxXByLevel = {};
-  entitiesByLevel.forEach(({ level, entityIds }) => {
-    let maxX = 0;
-    entityIds.forEach((id) => {
-      const pos = positionByEntity[id];
-      if (pos) maxX = Math.max(maxX, pos.x + NODE_WIDTH);
-    });
-    maxXByLevel[level] = maxX;
-  });
-  const maxTotalWidth = Math.max(0, ...Object.values(maxXByLevel).map((w) => w + NODE_GAP));
+  const allX = Object.values(positionByEntity).map((p) => p.x);
+  const minX = Math.min(0, ...allX);
 
-  entitiesByLevel.forEach(({ level, entityIds }) => {
-    const levelWidth = maxXByLevel[level] - NODE_GAP;
-    const offset = (maxTotalWidth - levelWidth - NODE_GAP) / 2;
-    entityIds.forEach((id) => {
-      if (positionByEntity[id]) positionByEntity[id].x += offset;
-    });
+  Object.keys(positionByEntity).forEach((id) => {
+    positionByEntity[id].x += -minX;
   });
 
   return positionByEntity;
