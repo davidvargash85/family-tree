@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,7 +50,9 @@ const formStyles = {
   },
 };
 
-export default function AddMemberModal({ open, onClose, onSubmit, isPending }) {
+const defaultValues = { name: "", birthDate: "", deceased: false, deathDate: "", bio: "" };
+
+export default function AddMemberModal({ open, onClose, onSubmit, isPending, linkContext }) {
   const {
     register,
     handleSubmit,
@@ -58,13 +61,27 @@ export default function AddMemberModal({ open, onClose, onSubmit, isPending }) {
     reset,
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", birthDate: "", deceased: false, deathDate: "", bio: "" },
+    defaultValues,
   });
 
+  const nameInputRef = useRef(null);
+
+  // Reset form and focus first field whenever the modal opens
+  useEffect(() => {
+    if (open) {
+      reset(defaultValues);
+      const t = requestAnimationFrame(() => {
+        nameInputRef.current?.focus();
+      });
+      return () => cancelAnimationFrame(t);
+    }
+  }, [open, reset]);
+
+  const { ref: nameRegisterRef, ...nameRegisterRest } = register("name");
   const deceased = watch("deceased");
 
   const handleClose = () => {
-    reset();
+    reset(defaultValues);
     onClose();
   };
 
@@ -78,8 +95,14 @@ export default function AddMemberModal({ open, onClose, onSubmit, isPending }) {
     });
   };
 
+  const title = linkContext
+    ? linkContext.type === "parent"
+      ? `Add child for ${linkContext.otherMemberName || "?"}`
+      : `Add spouse for ${linkContext.otherMemberName || "?"}`
+    : "Add member";
+
   return (
-    <Modal open={open} onClose={handleClose} title="Add member">
+    <Modal open={open} onClose={handleClose} title={title}>
       <form onSubmit={handleSubmit(onFormSubmit)} style={formStyles.form}>
         <div style={formStyles.field}>
           <label htmlFor="add-member-name" style={formStyles.label}>
@@ -87,7 +110,11 @@ export default function AddMemberModal({ open, onClose, onSubmit, isPending }) {
           </label>
           <input
             id="add-member-name"
-            {...register("name")}
+            {...nameRegisterRest}
+            ref={(el) => {
+              nameRegisterRef(el);
+              nameInputRef.current = el;
+            }}
             placeholder="Full name"
             style={{ ...formStyles.input, ...(errors.name ? formStyles.inputError : {}) }}
           />

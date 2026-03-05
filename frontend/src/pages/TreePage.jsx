@@ -6,6 +6,7 @@ import TreeGraph from "../components/TreeGraph";
 import MemberDetail from "../components/MemberDetail";
 import MemberPopover from "../components/MemberPopover";
 import AddMemberModal from "../components/AddMemberModal";
+import RelationshipTypeModal from "../components/RelationshipTypeModal";
 import { formatDeathYear } from "../utils/memberDates";
 
 export default function TreePage() {
@@ -13,8 +14,10 @@ export default function TreePage() {
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [popoverAnchorRect, setPopoverAnchorRect] = useState(null);
-  const [view, setView] = useState("list");
+  const [view, setView] = useState("graph");
   const [showAddMember, setShowAddMember] = useState(false);
+  const [pendingConnection, setPendingConnection] = useState(null);
+  const [addMemberThenLink, setAddMemberThenLink] = useState(null);
 
   const handleGraphNodeClick = (nodeId, anchorRect, options) => {
     setSelectedMemberId(options?.memberId ?? nodeId);
@@ -52,10 +55,28 @@ export default function TreePage() {
   });
 
   const createMember = useMutation({
-    mutationFn: (body) => api.post(`/trees/${treeId}/members`, body),
-    onSuccess: () => {
+    mutationFn: ({ body }) => api.post(`/trees/${treeId}/members`, body),
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["members", treeId] });
       setShowAddMember(false);
+      const link = variables?.linkAfterCreate;
+      const newMemberId = response?.data?.member?.id;
+      if (link && newMemberId) {
+        createRelationship.mutate({
+          memberAId: link.otherMemberId,
+          memberBId: newMemberId,
+          type: link.type,
+        });
+      }
+      setAddMemberThenLink(null);
+    },
+  });
+
+  const createRelationship = useMutation({
+    mutationFn: (body) => api.post(`/trees/${treeId}/relationships`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+      setPendingConnection(null);
     },
   });
 
@@ -130,6 +151,9 @@ export default function TreePage() {
               members={members}
               relationships={relationships}
               onNodeClick={handleGraphNodeClick}
+              onConnectionRequest={canEdit ? setPendingConnection : undefined}
+              onAddChild={canEdit ? (memberId) => { setAddMemberThenLink({ type: "parent", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
+              onAddSpouse={canEdit ? (memberId) => { setAddMemberThenLink({ type: "spouse", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
             />
           </div>
         ) : (
@@ -177,9 +201,23 @@ export default function TreePage() {
       {canEdit && (
         <AddMemberModal
           open={showAddMember}
-          onClose={() => setShowAddMember(false)}
-          onSubmit={(body) => createMember.mutate(body)}
+          onClose={() => { setShowAddMember(false); setAddMemberThenLink(null); }}
+          onSubmit={(body) => createMember.mutate({ body, linkAfterCreate: addMemberThenLink ?? undefined })}
           isPending={createMember.isPending}
+          linkContext={addMemberThenLink ? { type: addMemberThenLink.type, otherMemberName: members.find((m) => m.id === addMemberThenLink.otherMemberId)?.name ?? "" } : null}
+        />
+      )}
+
+      {pendingConnection && (
+        <RelationshipTypeModal
+          open
+          sourceName={pendingConnection.sourceName}
+          targetName={pendingConnection.targetName}
+          sourceMemberId={pendingConnection.sourceMemberId}
+          targetMemberId={pendingConnection.targetMemberId}
+          onConfirm={(payload) => createRelationship.mutate(payload)}
+          onCancel={() => setPendingConnection(null)}
+          isPending={createRelationship.isPending}
         />
       )}
 

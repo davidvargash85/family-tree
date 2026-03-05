@@ -26,7 +26,23 @@ const containerStyle = {
   minHeight: 400,
 };
 
-function TreeGraphInner({ members, relationships, onNodeClick }) {
+function nodeToMemberInfo(node) {
+  if (!node) return { memberId: null, name: "" };
+  if (node.type === "couple" && node.data?.members?.[0]) {
+    const m = node.data.members[0];
+    return { memberId: m.id, name: m.name ?? "" };
+  }
+  return { memberId: node.id, name: node.data?.label ?? "" };
+}
+
+function TreeGraphInner({
+  members,
+  relationships,
+  onNodeClick,
+  onConnectionRequest,
+  onAddChild,
+  onAddSpouse,
+}) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => getLayoutedElements(members, relationships),
     [members, relationships]
@@ -71,8 +87,31 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
   );
 
   const selectContextValue = useMemo(
-    () => ({ onMemberSelect }),
-    [onMemberSelect]
+    () => ({
+      onMemberSelect,
+      onAddChild: onAddChild ?? undefined,
+      onAddSpouse: onAddSpouse ?? undefined,
+    }),
+    [onMemberSelect, onAddChild, onAddSpouse]
+  );
+
+  const onConnect = useCallback(
+    (connection) => {
+      if (!onConnectionRequest || !connection?.source || !connection?.target) return;
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      const sourceInfo = nodeToMemberInfo(sourceNode);
+      const targetInfo = nodeToMemberInfo(targetNode);
+      if (sourceInfo.memberId && targetInfo.memberId && sourceInfo.memberId !== targetInfo.memberId) {
+        onConnectionRequest({
+          sourceMemberId: sourceInfo.memberId,
+          targetMemberId: targetInfo.memberId,
+          sourceName: sourceInfo.name,
+          targetName: targetInfo.name,
+        });
+      }
+    },
+    [nodes, onConnectionRequest]
   );
 
   if (members.length === 0) {
@@ -89,6 +128,7 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClickHandler}
+        onConnect={onConnect}
         fitView
         attributionPosition="bottom-left"
       >

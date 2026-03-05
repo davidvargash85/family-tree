@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Handle, Position } from "reactflow";
-import { Ribbon } from "lucide-react";
+import { Ribbon, Plus, Baby, Heart } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
+import { TreeGraphSelectContext } from "./TreeGraphSelectContext";
 
 const cardBase = {
   padding: 10,
@@ -64,12 +65,38 @@ const name = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
+const actionRow = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 4,
+};
+const actionBtn = {
+  padding: 4,
+  border: "none",
+  background: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+  color: "#6b7280",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "background-color 0.15s ease, color 0.15s ease",
+};
+const actionBtnHover = {
+  ...actionBtn,
+  backgroundColor: "rgba(59, 130, 246, 0.12)",
+  color: "#2563eb",
+};
 
-export function MemberNode({ data }) {
+export function MemberNode({ data, id: nodeId }) {
   const label = data?.label ?? "";
   const photoUrl = data?.photoUrl;
   const deceased = data?.deathDate != null && !isAliveSentinel(data.deathDate);
   const [hovered, setHovered] = useState(false);
+  const [hoveredAction, setHoveredAction] = useState(null);
+  const { onAddChild, onAddSpouse } = useContext(TreeGraphSelectContext) ?? {};
+  const showActions = onAddChild || onAddSpouse;
 
   return (
     <>
@@ -95,6 +122,38 @@ export function MemberNode({ data }) {
           )}
         </div>
         <span style={name}>{label}</span>
+        {showActions && (
+          <div style={actionRow}>
+            {onAddChild && (
+              <button
+                type="button"
+                style={hoveredAction === "child" ? actionBtnHover : actionBtn}
+                onClick={(e) => { e.stopPropagation(); onAddChild(nodeId); }}
+                onMouseEnter={() => setHoveredAction("child")}
+                onMouseLeave={() => setHoveredAction(null)}
+                title="Add child"
+                aria-label="Add child"
+              >
+                <Plus size={12} strokeWidth={2.5} />
+                <Baby size={14} style={{ marginLeft: 1 }} />
+              </button>
+            )}
+            {onAddSpouse && (
+              <button
+                type="button"
+                style={hoveredAction === "spouse" ? actionBtnHover : actionBtn}
+                onClick={(e) => { e.stopPropagation(); onAddSpouse(nodeId); }}
+                onMouseEnter={() => setHoveredAction("spouse")}
+                onMouseLeave={() => setHoveredAction(null)}
+                title="Add spouse"
+                aria-label="Add spouse"
+              >
+                <Plus size={12} strokeWidth={2.5} />
+                <Heart size={14} style={{ marginLeft: 1 }} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
