@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { Handle, Position } from "reactflow";
-import { Ribbon, Plus, Baby, Heart } from "lucide-react";
+import { Ribbon, Plus, Baby, Heart, Trash2 } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
 import { TreeGraphSelectContext } from "./TreeGraphSelectContext";
 
@@ -65,11 +65,27 @@ const name = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
-const actionRow = {
+const nodeWrap = {
   display: "flex",
   alignItems: "center",
+  gap: 0,
+  position: "relative",
+};
+const actionsColumn = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
   justifyContent: "center",
-  gap: 4,
+  gap: 2,
+  marginLeft: 4,
+  opacity: 0,
+  pointerEvents: "none",
+  transition: "opacity 0.15s ease",
+};
+const actionsColumnVisible = {
+  ...actionsColumn,
+  opacity: 1,
+  pointerEvents: "auto",
 };
 const actionBtn = {
   padding: 4,
@@ -88,6 +104,11 @@ const actionBtnHover = {
   backgroundColor: "rgba(59, 130, 246, 0.12)",
   color: "#2563eb",
 };
+const actionBtnDangerHover = {
+  ...actionBtn,
+  backgroundColor: "rgba(185, 28, 28, 0.12)",
+  color: "#b91c1c",
+};
 
 export function MemberNode({ data, id: nodeId }) {
   const label = data?.label ?? "";
@@ -95,8 +116,8 @@ export function MemberNode({ data, id: nodeId }) {
   const deceased = data?.deathDate != null && !isAliveSentinel(data.deathDate);
   const [hovered, setHovered] = useState(false);
   const [hoveredAction, setHoveredAction] = useState(null);
-  const { onAddChild, onAddSpouse } = useContext(TreeGraphSelectContext) ?? {};
-  const showActions = onAddChild || onAddSpouse;
+  const { onAddChild, onAddSpouse, onDelete } = useContext(TreeGraphSelectContext) ?? {};
+  const showActions = onAddChild || onAddSpouse || onDelete;
 
   return (
     <>
@@ -105,25 +126,29 @@ export function MemberNode({ data, id: nodeId }) {
       <Handle type="target" position={Position.Bottom} id="bottom-target" />
       <Handle type="source" position={Position.Bottom} id="bottom-source" />
       <div
-        style={hovered ? cardHover : cardBase}
+        style={nodeWrap}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div style={photoWrap}>
-          {photoUrl ? (
-            <img src={photoUrl} alt="" style={photo} />
-          ) : (
-            <span style={placeholder}>{label.charAt(0) || "?"}</span>
-          )}
-          {deceased && (
-            <span style={ribbonWrap} title="Deceased" aria-hidden="true">
-              <Ribbon size={18} color="#1f2937" strokeWidth={1.5} />
-            </span>
-          )}
+        <div
+          style={hovered ? cardHover : cardBase}
+        >
+          <div style={photoWrap}>
+            {photoUrl ? (
+              <img src={photoUrl} alt="" style={photo} />
+            ) : (
+              <span style={placeholder}>{label.charAt(0) || "?"}</span>
+            )}
+            {deceased && (
+              <span style={ribbonWrap} title="Deceased" aria-hidden="true">
+                <Ribbon size={18} color="#1f2937" strokeWidth={1.5} />
+              </span>
+            )}
+          </div>
+          <span style={name}>{label}</span>
         </div>
-        <span style={name}>{label}</span>
         {showActions && (
-          <div style={actionRow}>
+          <div style={hovered ? actionsColumnVisible : actionsColumn}>
             {onAddChild && (
               <button
                 type="button"
@@ -150,6 +175,19 @@ export function MemberNode({ data, id: nodeId }) {
               >
                 <Plus size={12} strokeWidth={2.5} />
                 <Heart size={14} style={{ marginLeft: 1 }} />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                style={hoveredAction === "delete" ? actionBtnDangerHover : actionBtn}
+                onClick={(e) => { e.stopPropagation(); onDelete(nodeId); }}
+                onMouseEnter={() => setHoveredAction("delete")}
+                onMouseLeave={() => setHoveredAction(null)}
+                title="Delete"
+                aria-label="Delete"
+              >
+                <Trash2 size={16} />
               </button>
             )}
           </div>

@@ -42,6 +42,7 @@ function TreeGraphInner({
   onConnectionRequest,
   onAddChild,
   onAddSpouse,
+  onDelete,
 }) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => getLayoutedElements(members, relationships),
@@ -91,8 +92,9 @@ function TreeGraphInner({
       onMemberSelect,
       onAddChild: onAddChild ?? undefined,
       onAddSpouse: onAddSpouse ?? undefined,
+      onDelete: onDelete ?? undefined,
     }),
-    [onMemberSelect, onAddChild, onAddSpouse]
+    [onMemberSelect, onAddChild, onAddSpouse, onDelete]
   );
 
   const onConnect = useCallback(

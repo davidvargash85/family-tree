@@ -7,7 +7,9 @@ import MemberDetail from "../components/MemberDetail";
 import MemberPopover from "../components/MemberPopover";
 import AddMemberModal from "../components/AddMemberModal";
 import RelationshipTypeModal from "../components/RelationshipTypeModal";
+import ConfirmModal from "../components/ConfirmModal";
 import { formatDeathYear } from "../utils/memberDates";
+import { countDescendants } from "../utils/descendants";
 
 export default function TreePage() {
   const { treeId } = useParams();
@@ -18,6 +20,7 @@ export default function TreePage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [pendingConnection, setPendingConnection] = useState(null);
   const [addMemberThenLink, setAddMemberThenLink] = useState(null);
+  const [deleteFromCard, setDeleteFromCard] = useState(null);
 
   const handleGraphNodeClick = (nodeId, anchorRect, options) => {
     setSelectedMemberId(options?.memberId ?? nodeId);
@@ -77,6 +80,16 @@ export default function TreePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
       setPendingConnection(null);
+    },
+  });
+
+  const deleteMember = useMutation({
+    mutationFn: (memberId) => api.delete(`/trees/${treeId}/members/${memberId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+      setDeleteFromCard(null);
+      closePopover();
     },
   });
 
@@ -143,6 +156,7 @@ export default function TreePage() {
             memberId={selectedMemberId}
             canEdit={canEdit}
             onClose={() => setSelectedMemberId(null)}
+            onDeleted={closePopover}
           />
         )}
         {view === "graph" ? (
@@ -154,6 +168,7 @@ export default function TreePage() {
               onConnectionRequest={canEdit ? setPendingConnection : undefined}
               onAddChild={canEdit ? (memberId) => { setAddMemberThenLink({ type: "parent", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
               onAddSpouse={canEdit ? (memberId) => { setAddMemberThenLink({ type: "spouse", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
+              onDelete={canEdit ? (memberId) => setDeleteFromCard({ memberId, memberName: members.find((m) => m.id === memberId)?.name ?? "" }) : undefined}
             />
           </div>
         ) : (
@@ -208,6 +223,26 @@ export default function TreePage() {
         />
       )}
 
+      {deleteFromCard && (
+        <ConfirmModal
+          open
+          title="Delete member?"
+          message={
+            (() => {
+              const n = countDescendants(relationships, deleteFromCard.memberId);
+              return n > 0
+                ? `This will permanently delete ${deleteFromCard.memberName || "?"} and ${n} descendant(s) (${n + 1} people total). This cannot be undone.`
+                : `This will permanently delete ${deleteFromCard.memberName || "?"}. This cannot be undone.`;
+            })()
+          }
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => deleteMember.mutate(deleteFromCard.memberId)}
+          onCancel={() => setDeleteFromCard(null)}
+          isPending={deleteMember.isPending}
+        />
+      )}
+
       {pendingConnection && (
         <RelationshipTypeModal
           open
@@ -227,6 +262,7 @@ export default function TreePage() {
           memberId={selectedMemberId}
           canEdit={canEdit}
           onClose={closePopover}
+          onDeleted={closePopover}
           anchorRect={popoverAnchorRect}
         />
       )}

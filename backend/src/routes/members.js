@@ -93,14 +93,44 @@ membersRouter.patch("/:treeId/members/:memberId", requireEditor, async (req, res
   return res.json({ member: updated });
 });
 
+function getDescendantIds(childrenMap, memberId) {
+  const seen = new Set();
+  const queue = [memberId];
+  while (queue.length) {
+    const id = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const children = childrenMap.get(id) || [];
+    queue.push(...children);
+  }
+  seen.delete(memberId);
+  return [...seen];
+}
+
 membersRouter.delete("/:treeId/members/:memberId", requireEditor, async (req, res) => {
+  const { treeId, memberId } = req.params;
   const member = await prisma.member.findFirst({
-    where: {
-      id: req.params.memberId,
-      treeId: req.params.treeId,
-    },
+    where: { id: memberId, treeId },
   });
   if (!member) return res.status(404).json({ error: "Member not found" });
-  await prisma.member.delete({ where: { id: req.params.memberId } });
+
+  const parentRels = await prisma.relationship.findMany({
+    where: { treeId, type: "parent" },
+    select: { memberAId: true, memberBId: true },
+  });
+  const childrenMap = new Map();
+  parentRels.forEach((r) => {
+    if (!childrenMap.has(r.memberAId)) childrenMap.set(r.memberAId, []);
+    childrenMap.get(r.memberAId).push(r.memberBId);
+  });
+
+  const descendantIds = getDescendantIds(childrenMap, memberId);
+
+  const txOps = [];
+  if (descendantIds.length > 0) {
+    txOps.push(prisma.member.deleteMany({ where: { id: { in: descendantIds }, treeId } }));
+  }
+  txOps.push(prisma.member.delete({ where: { id: memberId } }));
+  await prisma.$transaction(txOps);
   return res.status(204).send();
 });

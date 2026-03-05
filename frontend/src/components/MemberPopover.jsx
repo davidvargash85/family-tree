@@ -17,7 +17,7 @@ const popoverWrapStyle = {
  * @param {() => void} props.onClose
  * @param {DOMRect | { left: number, top: number, width?: number, height?: number } | null} props.anchorRect - getBoundingClientRect-like; when null, popover is not shown
  */
-export default function MemberPopover({ treeId, memberId, canEdit, onClose, anchorRect }) {
+export default function MemberPopover({ treeId, memberId, canEdit, onClose, onDeleted, anchorRect }) {
   const virtualElement = useMemo(
     () =>
       anchorRect
@@ -79,6 +79,7 @@ export default function MemberPopover({ treeId, memberId, canEdit, onClose, anch
         memberId={memberId}
         canEdit={canEdit}
         onClose={onClose}
+        onDeleted={onDeleted}
         placement="popover"
       />
     </div>,

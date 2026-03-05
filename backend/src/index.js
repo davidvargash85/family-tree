@@ -13,8 +13,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+function log(level, msg, meta = {}) {
+  const ts = new Date().toISOString();
+  const metaStr = Object.keys(meta).length ? " " + JSON.stringify(meta) : "";
+  console.log(`${ts} [${level}] ${msg}${metaStr}`);
+}
+
 app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173", credentials: true }));
 app.use(express.json());
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  const body = req.body && Object.keys(req.body).length ? req.body : undefined;
+  log("request", `${req.method} ${req.originalUrl}`, body ? { body } : {});
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    const level = res.statusCode >= 500 ? "error" : res.statusCode >= 400 ? "warn" : "info";
+    log(level, `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
+
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.use("/auth", authRouter);
@@ -26,4 +45,19 @@ app.use("/invitations", invitationsRouter);
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.use((err, req, res, next) => {
+  log("error", err.message || "Unhandled error", {
+    stack: err.stack,
+    path: req.originalUrl,
+    method: req.method,
+  });
+  if (!res.headersSent) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  log("error", "Unhandled promise rejection", { reason, stack: reason?.stack });
+});
+
+app.listen(PORT, () => log("info", `Server running on http://localhost:${PORT}`));

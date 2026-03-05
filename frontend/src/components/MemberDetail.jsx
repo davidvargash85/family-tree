@@ -1,11 +1,32 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
+import ConfirmModal from "./ConfirmModal";
 
-export default function MemberDetail({ treeId, memberId, canEdit, onClose, placement = "side" }) {
+function countDescendants(relationships, memberId) {
+  const parentRels = (relationships || []).filter((r) => r.type === "parent");
+  const childrenMap = new Map();
+  parentRels.forEach((r) => {
+    if (!childrenMap.has(r.memberAId)) childrenMap.set(r.memberAId, []);
+    childrenMap.get(r.memberAId).push(r.memberBId);
+  });
+  const seen = new Set();
+  const queue = [memberId];
+  while (queue.length) {
+    const id = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    (childrenMap.get(id) || []).forEach((c) => queue.push(c));
+  }
+  seen.delete(memberId);
+  return seen.size;
+}
+
+export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDeleted, placement = "side" }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: member, isLoading } = useQuery({
     queryKey: ["member", treeId, memberId],
@@ -34,9 +55,14 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, place
   });
 
   const members = membersData?.members ?? [];
-  const relationships = relsData?.relationships?.filter(
+  const allRelationships = relsData?.relationships ?? [];
+  const relationships = allRelationships.filter(
     (r) => r.memberAId === memberId || r.memberBId === memberId
-  ) ?? [];
+  );
+  const descendantCount = useMemo(
+    () => countDescendants(allRelationships, memberId),
+    [allRelationships, memberId]
+  );
 
   const updateMember = useMutation({
     mutationFn: (payload) => api.patch(`/trees/${treeId}/members/${memberId}`, payload),
@@ -68,6 +94,18 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, place
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
       queryClient.invalidateQueries({ queryKey: ["member", treeId, memberId] });
+    },
+  });
+
+  const deleteMember = useMutation({
+    mutationFn: () => api.delete(`/trees/${treeId}/members/${memberId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["member", treeId, memberId] });
+      setShowDeleteConfirm(false);
+      onClose?.();
+      onDeleted?.();
     },
   });
 
@@ -137,9 +175,35 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, place
           )}
           {member.bio && <p style={styles.bio}>{member.bio}</p>}
           {canEdit && (
-            <button type="button" onClick={() => setEditing(true)} style={styles.editBtn}>
-              Edit
-            </button>
+            <div style={styles.editDeleteRow}>
+              <button type="button" onClick={() => setEditing(true)} style={styles.editBtn}>
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                style={styles.deleteBtn}
+              >
+                Delete
+              </button>
+            </div>
+          )}
+
+          {showDeleteConfirm && (
+            <ConfirmModal
+              open={showDeleteConfirm}
+              title="Delete member?"
+              message={
+                descendantCount > 0
+                  ? `This will permanently delete ${member.name} and ${descendantCount} descendant(s) (${descendantCount + 1} people total). This cannot be undone.`
+                  : `This will permanently delete ${member.name}. This cannot be undone.`
+              }
+              confirmLabel="Delete"
+              danger
+              onConfirm={() => deleteMember.mutate()}
+              onCancel={() => setShowDeleteConfirm(false)}
+              isPending={deleteMember.isPending}
+            />
           )}
 
           <h4 style={styles.relsTitle}>Relationships</h4>
@@ -370,14 +434,22 @@ const styles = {
   name: { margin: "0 0 8px", textAlign: "center" },
   dates: { margin: "0 0 12px", fontSize: 14, color: "#6b7280", textAlign: "center" },
   bio: { margin: "0 0 12px", fontSize: 14, lineHeight: 1.5 },
+  editDeleteRow: { display: "flex", gap: 8, marginBottom: 16 },
   editBtn: {
-    display: "block",
-    width: "100%",
+    flex: 1,
     padding: 8,
-    marginBottom: 16,
     background: "#f3f4f6",
     border: "none",
     borderRadius: 8,
+    cursor: "pointer",
+  },
+  deleteBtn: {
+    flex: 1,
+    padding: 8,
+    background: "none",
+    border: "1px solid #b91c1c",
+    borderRadius: 8,
+    color: "#b91c1c",
     cursor: "pointer",
   },
   relsTitle: { margin: "0 0 8px", fontSize: 14 },
