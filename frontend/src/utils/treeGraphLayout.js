@@ -48,6 +48,23 @@ function assignLevels(members, parentsMap) {
 }
 
 /**
+ * Align levels for spouse/sibling: both members of a spouse or sibling pair
+ * get the same level (the deeper one) so they display side-by-side.
+ */
+function alignSpouseSiblingLevels(levels, sameLevelRels) {
+  const result = { ...levels };
+  sameLevelRels.forEach((r) => {
+    const a = result[r.memberAId];
+    const b = result[r.memberBId];
+    if (a === undefined || b === undefined) return;
+    const same = Math.max(a, b);
+    result[r.memberAId] = same;
+    result[r.memberBId] = same;
+  });
+  return result;
+}
+
+/**
  * Group member ids by level and sort levels.
  */
 function groupByLevel(members, levels) {
@@ -118,9 +135,11 @@ export function getLayoutedElements(members, relationships) {
     (r) => memberIds.has(r.memberAId) && memberIds.has(r.memberBId)
   );
   const parentRels = rels.filter((r) => r.type === "parent");
+  const sameLevelRels = rels.filter((r) => r.type === "spouse" || r.type === "sibling");
 
   const { parentsMap } = buildParentMaps(members, parentRels);
-  const levels = assignLevels(members, parentsMap);
+  const levelsFromParent = assignLevels(members, parentsMap);
+  const levels = alignSpouseSiblingLevels(levelsFromParent, sameLevelRels);
   const sortedLevels = groupByLevel(members, levels);
   const positionByNode = computePositions(sortedLevels, parentsMap);
 

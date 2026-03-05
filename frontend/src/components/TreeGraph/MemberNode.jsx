@@ -15,10 +15,14 @@ const card = {
   minWidth: 80,
   position: "relative",
 };
+const photoWrap = {
+  position: "relative",
+  flexShrink: 0,
+};
 const ribbonWrap = {
   position: "absolute",
-  top: 4,
-  right: 4,
+  bottom: -2,
+  right: -2,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -64,16 +68,18 @@ export function MemberNode({ data }) {
       <Handle type="target" position={Position.Bottom} id="bottom-target" />
       <Handle type="source" position={Position.Bottom} id="bottom-source" />
       <div style={card}>
-        {deceased && (
-          <span style={ribbonWrap} title="Deceased" aria-hidden="true">
-            <Ribbon size={18} color="#1f2937" strokeWidth={2} />
-          </span>
-        )}
-        {photoUrl ? (
-          <img src={photoUrl} alt="" style={photo} />
-        ) : (
-          <span style={placeholder}>{label.charAt(0) || "?"}</span>
-        )}
+        <div style={photoWrap}>
+          {photoUrl ? (
+            <img src={photoUrl} alt="" style={photo} />
+          ) : (
+            <span style={placeholder}>{label.charAt(0) || "?"}</span>
+          )}
+          {deceased && (
+            <span style={ribbonWrap} title="Deceased" aria-hidden="true">
+              <Ribbon size={18} color="#1f2937" strokeWidth={1.5} />
+            </span>
+          )}
+        </div>
         <span style={name}>{label}</span>
       </div>
     </>
