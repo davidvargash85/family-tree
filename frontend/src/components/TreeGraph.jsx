@@ -55,7 +55,7 @@ function TreeGraphInner({ members, relationships, onNodeClick }) {
   }
 
   return (
-    <div style={{ width: "100%", height: 400 }}>
+    <div style={{ width: "100%", height: "100%", minHeight: 400 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

@@ -4,6 +4,63 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 
+const styles = {
+  page: { minHeight: "100vh", background: "#f5f5f5" },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "1rem 1.5rem",
+    background: "#fff",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  },
+  logo: { margin: 0, fontSize: "1.25rem", fontWeight: 600 },
+  userRow: { display: "flex", alignItems: "center", gap: "0.75rem" },
+  userName: { fontSize: "0.9rem", color: "#555" },
+  logoutBtn: {
+    padding: "0.4rem 0.75rem",
+    background: "#333",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "0.875rem",
+  },
+  main: { maxWidth: "600px", margin: "0 auto", padding: "1.5rem" },
+  section: { background: "#fff", borderRadius: "8px", padding: "1.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" },
+  sectionTitle: { margin: "0 0 1rem", fontSize: "1.1rem" },
+  createForm: { display: "flex", gap: "0.5rem", marginBottom: "1rem" },
+  input: {
+    flex: 1,
+    padding: "0.5rem 0.75rem",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    fontSize: "1rem",
+  },
+  createBtn: {
+    padding: "0.5rem 1rem",
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontWeight: 500,
+  },
+  muted: { color: "#666", margin: "0.5rem 0", fontSize: "0.9rem" },
+  treeList: { listStyle: "none", margin: 0, padding: 0 },
+  treeItem: { marginBottom: "0.5rem" },
+  treeLink: {
+    display: "block",
+    padding: "0.75rem",
+    background: "#f9f9f9",
+    borderRadius: "6px",
+    textDecoration: "none",
+    color: "inherit",
+  },
+  treeName: { display: "block", fontWeight: 500 },
+  treeMeta: { display: "block", fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" },
+};
+
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();

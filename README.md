@@ -12,6 +12,7 @@ A full-stack web app for creating, visualizing, and sharing family trees with ro
 ### Prerequisites
 
 - Node.js 18+
+- pnpm (`npm install -g pnpm`)
 - PostgreSQL (local or Docker)
 
 ### Backend
@@ -20,27 +21,19 @@ A full-stack web app for creating, visualizing, and sharing family trees with ro
 cd backend
 cp .env.example .env
 # Edit .env: set DATABASE_URL to your PostgreSQL connection string
-npm install
-npx prisma db push   # or: npx prisma migrate dev
-npm run dev
+pnpm install
+pnpm exec prisma db push   # or: pnpm exec prisma migrate dev
+pnpm run dev
 ```
 
 Backend runs at `http://localhost:3001` by default.
 
 ### Frontend
 
-If `npm install` fails with permission errors (e.g. npm cache), fix cache ownership first:
-
-```bash
-sudo chown -R $(whoami) ~/.npm
-```
-
-Then:
-
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Frontend runs at `http://localhost:5173` and proxies `/api` and `/uploads` to the backend.

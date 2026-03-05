@@ -7,7 +7,8 @@ import { requireTreeAccess, requireEditor } from "../middleware/treeAccess.js";
 export const relationshipsRouter = Router();
 relationshipsRouter.use(authMiddleware);
 
-const RELATIONSHIP_TYPES = ["parent", "child", "spouse", "sibling"];
+// Only "parent" for parent-child; always stored as parent (memberA) → child (memberB). No "child" type.
+const RELATIONSHIP_TYPES = ["parent", "spouse", "sibling"];
 const createRelationshipSchema = z.object({
   memberAId: z.string(),
   memberBId: z.string(),
@@ -25,7 +26,7 @@ relationshipsRouter.get("/:treeId/relationships", requireTreeAccess(), async (re
   return res.json({ relationships });
 });
 
-relationshipsRouter.post("/:treeId/relationships", requireEditor(), async (req, res) => {
+relationshipsRouter.post("/:treeId/relationships", requireEditor, async (req, res) => {
   const parsed = createRelationshipSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid input" });
@@ -53,6 +54,20 @@ relationshipsRouter.post("/:treeId/relationships", requireEditor(), async (req, 
   if (existing) {
     return res.status(409).json({ error: "Relationship already exists" });
   }
+  // For parent-child, reject the reverse too (only one direction stored: parent → child)
+  if (type === "parent") {
+    const reverse = await prisma.relationship.findFirst({
+      where: {
+        treeId,
+        memberAId: memberBId,
+        memberBId: memberAId,
+        type: "parent",
+      },
+    });
+    if (reverse) {
+      return res.status(409).json({ error: "Relationship already exists" });
+    }
+  }
   const relationship = await prisma.relationship.create({
     data: { treeId, memberAId, memberBId, type },
     include: {
@@ -63,7 +78,7 @@ relationshipsRouter.post("/:treeId/relationships", requireEditor(), async (req, 
   return res.status(201).json({ relationship });
 });
 
-relationshipsRouter.delete("/:treeId/relationships/:relId", requireEditor(), async (req, res) => {
+relationshipsRouter.delete("/:treeId/relationships/:relId", requireEditor, async (req, res) => {
   const rel = await prisma.relationship.findFirst({
     where: {
       id: req.params.relId,

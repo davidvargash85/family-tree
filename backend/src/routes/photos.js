@@ -39,7 +39,7 @@ photosRouter.use(authMiddleware);
 
 photosRouter.post(
   "/:treeId/members/:memberId/photo",
-  requireEditor(),
+  requireEditor,
   upload.single("photo"),
   async (req, res) => {
     if (!req.file) {
@@ -61,7 +61,7 @@ photosRouter.post(
   }
 );
 
-photosRouter.delete("/:treeId/members/:memberId/photo", requireEditor(), async (req, res) => {
+photosRouter.delete("/:treeId/members/:memberId/photo", requireEditor, async (req, res) => {
   const member = await prisma.member.findFirst({
     where: {
       id: req.params.memberId,

@@ -24,7 +24,7 @@ membersRouter.get("/:treeId/members", requireTreeAccess(), async (req, res) => {
   return res.json({ members });
 });
 
-membersRouter.post("/:treeId/members", requireEditor(), async (req, res) => {
+membersRouter.post("/:treeId/members", requireEditor, async (req, res) => {
   const parsed = createMemberSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid input" });
@@ -57,7 +57,7 @@ membersRouter.get("/:treeId/members/:memberId", requireTreeAccess(), async (req,
   return res.json({ member });
 });
 
-membersRouter.patch("/:treeId/members/:memberId", requireEditor(), async (req, res) => {
+membersRouter.patch("/:treeId/members/:memberId", requireEditor, async (req, res) => {
   const parsed = updateMemberSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid input" });
@@ -81,7 +81,7 @@ membersRouter.patch("/:treeId/members/:memberId", requireEditor(), async (req, r
   return res.json({ member: updated });
 });
 
-membersRouter.delete("/:treeId/members/:memberId", requireEditor(), async (req, res) => {
+membersRouter.delete("/:treeId/members/:memberId", requireEditor, async (req, res) => {
   const member = await prisma.member.findFirst({
     where: {
       id: req.params.memberId,

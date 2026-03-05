@@ -141,10 +141,21 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose }) {
             <ul style={styles.relsList}>
               {relationships.map((r) => {
                 const other = r.memberAId === memberId ? r.memberB : r.memberA;
+                // We store parent→child as type "parent" (memberA=parent, memberB=child). Display role from current person's perspective. Support legacy "child" type.
+                const displayType =
+                  r.type === "parent"
+                    ? r.memberAId === memberId
+                      ? "child"
+                      : "parent"
+                    : r.type === "child"
+                      ? r.memberBId === memberId
+                        ? "parent"
+                        : "child"
+                      : r.type;
                 return (
                   <li key={r.id} style={styles.relItem}>
                     <span>{other.name}</span>
-                    <span style={styles.relType}>{r.type}</span>
+                    <span style={styles.relType}>{displayType}</span>
                     {canEdit && (
                       <button
                         type="button"
@@ -241,7 +252,12 @@ function AddRelationshipForm({ currentMemberId, members, onSubmit, isPending }) 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!otherId) return;
-    onSubmit({ memberAId: currentMemberId, memberBId: otherId, type });
+    // Parent–child can only be created from the parent: current person is always parent (memberA), selected is child (memberB).
+    if (type === "parent") {
+      onSubmit({ memberAId: currentMemberId, memberBId: otherId, type: "parent" });
+    } else {
+      onSubmit({ memberAId: currentMemberId, memberBId: otherId, type });
+    }
     setOtherId("");
   };
 
@@ -260,8 +276,7 @@ function AddRelationshipForm({ currentMemberId, members, onSubmit, isPending }) 
         ))}
       </select>
       <select value={type} onChange={(e) => setType(e.target.value)} style={styles.input}>
-        <option value="parent">Parent</option>
-        <option value="child">Child</option>
+        <option value="parent">Child (this person is the parent)</option>
         <option value="spouse">Spouse</option>
         <option value="sibling">Sibling</option>
       </select>
