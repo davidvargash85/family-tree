@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
 import { api } from "../api";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 import ConfirmModal from "./ConfirmModal";
@@ -23,10 +24,12 @@ function countDescendants(relationships, memberId) {
   return seen.size;
 }
 
-export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDeleted, placement = "side" }) {
+export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDeleted, onRequestDelete, placement = "side" }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [hoveredRemoveRelId, setHoveredRemoveRelId] = useState(null);
+  const [hoveredDeleteBtn, setHoveredDeleteBtn] = useState(false);
 
   const { data: member, isLoading } = useQuery({
     queryKey: ["member", treeId, memberId],
@@ -171,10 +174,14 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
               </button>
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                style={styles.deleteBtn}
+                onClick={() => (onRequestDelete ? onRequestDelete(memberId) : setShowDeleteConfirm(true))}
+                onMouseEnter={() => setHoveredDeleteBtn(true)}
+                onMouseLeave={() => setHoveredDeleteBtn(false)}
+                style={hoveredDeleteBtn ? styles.deleteBtnIconDanger : styles.deleteBtnIcon}
+                title="Delete"
+                aria-label="Delete"
               >
-                Delete
+                <Trash2 size={16} />
               </button>
             </div>
           )}
@@ -222,9 +229,13 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
                       <button
                         type="button"
                         onClick={() => deleteRelationship.mutate(r.id)}
-                        style={styles.removeRelBtn}
+                        onMouseEnter={() => setHoveredRemoveRelId(r.id)}
+                        onMouseLeave={() => setHoveredRemoveRelId(null)}
+                        style={hoveredRemoveRelId === r.id ? styles.relRemoveBtnDanger : styles.relRemoveBtn}
+                        title="Remove relationship"
+                        aria-label="Remove relationship"
                       >
-                        Remove
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </li>
@@ -517,6 +528,32 @@ const styles = {
     color: "#b91c1c",
     cursor: "pointer",
   },
+  deleteBtnIcon: {
+    flex: 1,
+    padding: 8,
+    border: "none",
+    background: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    color: "#6b7280",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
+  deleteBtnIconDanger: {
+    flex: 1,
+    padding: 8,
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    backgroundColor: "rgba(185, 28, 28, 0.12)",
+    color: "#b91c1c",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
   relsTitle: { margin: "0 0 8px", fontSize: 14 },
   addRelForm: { marginTop: 12, paddingTop: 12, borderTop: "1px solid #eee", display: "flex", flexDirection: "column", gap: 8 },
   searchWrap: { position: "relative" },
@@ -530,7 +567,32 @@ const styles = {
   relsList: { listStyle: "none", margin: 0, padding: 0 },
   relItem: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 14 },
   relType: { color: "#6b7280", textTransform: "capitalize" },
-  removeRelBtn: { marginLeft: "auto", background: "none", border: "none", color: "#b91c1c", fontSize: 12 },
+  relRemoveBtn: {
+    marginLeft: "auto",
+    padding: 4,
+    border: "none",
+    background: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    color: "#6b7280",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
+  relRemoveBtnDanger: {
+    marginLeft: "auto",
+    padding: 4,
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    backgroundColor: "rgba(185, 28, 28, 0.12)",
+    color: "#b91c1c",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
   form: { display: "flex", flexDirection: "column", gap: 10 },
   input: { padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14 },
   formActions: { display: "flex", gap: 8, marginTop: 8 },

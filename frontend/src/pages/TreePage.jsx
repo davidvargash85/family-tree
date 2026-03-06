@@ -157,6 +157,7 @@ export default function TreePage() {
             canEdit={canEdit}
             onClose={() => setSelectedMemberId(null)}
             onDeleted={closePopover}
+            onRequestDelete={canEdit ? (id) => setDeleteFromCard({ memberId: id, memberName: members.find((m) => m.id === id)?.name ?? "" }) : undefined}
           />
         )}
         {view === "graph" ? (
@@ -263,6 +264,7 @@ export default function TreePage() {
           canEdit={canEdit}
           onClose={closePopover}
           onDeleted={closePopover}
+          onRequestDelete={canEdit ? (id) => setDeleteFromCard({ memberId: id, memberName: members.find((m) => m.id === id)?.name ?? "" }) : undefined}
           anchorRect={popoverAnchorRect}
         />
       )}

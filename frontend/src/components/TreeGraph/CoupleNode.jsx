@@ -31,7 +31,7 @@ const photoWrap = {
 const thumbButtonBase = {
   padding: 0,
   border: "none",
-  background: "none",
+  backgroundColor: "transparent",
   cursor: "pointer",
   borderRadius: "50%",
   display: "block",
@@ -105,7 +105,7 @@ const actionsColumnVisible = {
 const actionBtn = {
   padding: 4,
   border: "none",
-  background: "none",
+  backgroundColor: "transparent",
   borderRadius: 6,
   cursor: "pointer",
   color: "#6b7280",
