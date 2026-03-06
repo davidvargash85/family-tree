@@ -20,11 +20,12 @@ model User {
 }
 
 model Tree {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String   @map("owner_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  name             String
+  ownerId          String   @map("owner_id")
+  layoutPositions  Json?    @map("layout_positions")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   owner        User         @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members      Member[]

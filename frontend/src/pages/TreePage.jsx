@@ -96,6 +96,13 @@ export default function TreePage() {
     },
   });
 
+  const updateLayoutMutation = useMutation({
+    mutationFn: (layoutPositions) => api.patch(`/trees/${treeId}`, { layoutPositions }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tree", treeId] });
+    },
+  });
+
   const tree = treeData?.tree;
   const members = membersData?.members ?? [];
   const relationships = relsData?.relationships ?? [];
@@ -168,6 +175,8 @@ export default function TreePage() {
             <TreeGraph
               members={members}
               relationships={relationships}
+              layoutPositions={tree.layoutPositions ?? undefined}
+              onLayoutSave={canEdit ? (positions) => updateLayoutMutation.mutate(positions) : undefined}
               onNodeClick={handleGraphNodeClick}
               onConnectionRequest={canEdit ? setPendingConnection : undefined}
               onAddChild={canEdit ? (memberId) => { setAddMemberThenLink({ type: "parent", otherMemberId: memberId }); setShowAddMember(true); } : undefined}

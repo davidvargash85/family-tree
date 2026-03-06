@@ -38,16 +38,29 @@ function nodeToMemberInfo(node) {
 function TreeGraphInner({
   members,
   relationships,
+  layoutPositions,
+  onLayoutSave,
   onNodeClick,
   onConnectionRequest,
   onAddChild,
   onAddSpouse,
   onDelete,
 }) {
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(
+  const { nodes: layoutNodes, edges: initialEdges } = useMemo(
     () => getLayoutedElements(members, relationships),
     [members, relationships]
   );
+
+  const initialNodes = useMemo(() => {
+    if (!layoutPositions || Object.keys(layoutPositions).length === 0) return layoutNodes;
+    return layoutNodes.map((node) => {
+      const saved = layoutPositions[node.id];
+      if (saved && typeof saved.x === "number" && typeof saved.y === "number") {
+        return { ...node, position: { x: saved.x, y: saved.y } };
+      }
+      return node;
+    });
+  }, [layoutNodes, layoutPositions]);
 
   const edgesWithMarker = useMemo(
     () =>
@@ -116,6 +129,21 @@ function TreeGraphInner({
     [nodes, onConnectionRequest]
   );
 
+  const onNodeDragStop = useCallback(
+    (_event, draggedNode) => {
+      if (!onLayoutSave) return;
+      const positions = {};
+      nodes.forEach((n) => {
+        const pos = n.id === draggedNode?.id ? draggedNode.position : n.position;
+        if (n.id && typeof pos?.x === "number" && typeof pos?.y === "number") {
+          positions[n.id] = { x: pos.x, y: pos.y };
+        }
+      });
+      onLayoutSave(positions);
+    },
+    [onLayoutSave, nodes]
+  );
+
   if (members.length === 0) {
     return <div style={emptyStateStyle}>Add members to see the tree</div>;
   }
@@ -130,6 +158,7 @@ function TreeGraphInner({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClickHandler}
+        onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         fitView
         attributionPosition="bottom-left"

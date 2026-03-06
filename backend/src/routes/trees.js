@@ -9,7 +9,11 @@ export const treesRouter = Router();
 treesRouter.use(authMiddleware);
 
 const createTreeSchema = z.object({ name: z.string().min(1).max(200) });
-const updateTreeSchema = z.object({ name: z.string().min(1).max(200).optional() });
+const positionSchema = z.object({ x: z.number(), y: z.number() });
+const updateTreeSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  layoutPositions: z.record(z.string(), positionSchema).optional(),
+});
 const createInviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(["viewer", "editor"]),
@@ -89,6 +93,7 @@ treesRouter.get("/:id", requireTreeAccess(), async (req, res) => {
       memberCount: tree._count.members,
       role: req.treeAccess.role,
       createdAt: tree.createdAt,
+      layoutPositions: tree.layoutPositions ?? undefined,
     },
   });
 });
@@ -98,11 +103,23 @@ treesRouter.patch("/:id", requireTreeAccess("editor"), async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid input" });
   }
+  const data = { ...parsed.data };
+  if (data.layoutPositions !== undefined && typeof data.layoutPositions !== "object") {
+    return res.status(400).json({ error: "Invalid layoutPositions" });
+  }
   const tree = await prisma.tree.update({
     where: { id: req.params.id },
-    data: parsed.data,
+    data,
   });
-  return res.json({ tree });
+  return res.json({
+    tree: {
+      id: tree.id,
+      name: tree.name,
+      role: req.treeAccess.role,
+      createdAt: tree.createdAt,
+      layoutPositions: tree.layoutPositions ?? undefined,
+    },
+  });
 });
 
 treesRouter.delete("/:id", requireOwner, async (req, res) => {
