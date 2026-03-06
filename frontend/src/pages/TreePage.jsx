@@ -76,9 +76,12 @@ export default function TreePage() {
   });
 
   const createRelationship = useMutation({
-    mutationFn: (body) => api.post(`/trees/${treeId}/relationships`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+    mutationFn: (body) => {
+      console.log("[family-tree addRelationship] frontend sending", JSON.stringify({ treeId, payload: body }));
+      return api.post(`/trees/${treeId}/relationships`, body);
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["relationships", treeId] });
       setPendingConnection(null);
     },
   });

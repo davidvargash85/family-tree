@@ -27,6 +27,8 @@ relationshipsRouter.get("/:treeId/relationships", requireTreeAccess(), async (re
 });
 
 relationshipsRouter.post("/:treeId/relationships", requireEditor, async (req, res) => {
+  const treeId = req.params.treeId;
+  console.log("[family-tree addRelationship] backend received", JSON.stringify({ treeId, body: req.body }));
   const parsed = createRelationshipSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid input" });
@@ -35,7 +37,6 @@ relationshipsRouter.post("/:treeId/relationships", requireEditor, async (req, re
   if (memberAId === memberBId) {
     return res.status(400).json({ error: "Members must be different" });
   }
-  const treeId = req.params.treeId;
   const [memberA, memberB] = await Promise.all([
     prisma.member.findFirst({ where: { id: memberAId, treeId } }),
     prisma.member.findFirst({ where: { id: memberBId, treeId } }),
@@ -75,6 +76,7 @@ relationshipsRouter.post("/:treeId/relationships", requireEditor, async (req, re
       memberB: { select: { id: true, name: true, photoUrl: true } },
     },
   });
+  console.log("[family-tree addRelationship] backend created", JSON.stringify({ treeId, relationshipId: relationship.id, memberAId, memberBId, type }));
   return res.status(201).json({ relationship });
 });
 

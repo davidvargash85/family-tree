@@ -83,9 +83,12 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
   });
 
   const addRelationship = useMutation({
-    mutationFn: (body) => api.post(`/trees/${treeId}/relationships`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+    mutationFn: (body) => {
+      console.log("[family-tree addRelationship] frontend sending", JSON.stringify({ treeId, payload: body }));
+      return api.post(`/trees/${treeId}/relationships`, body);
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["relationships", treeId] });
       queryClient.invalidateQueries({ queryKey: ["member", treeId, memberId] });
     },
   });

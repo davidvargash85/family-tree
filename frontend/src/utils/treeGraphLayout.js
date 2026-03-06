@@ -65,6 +65,29 @@ function alignSpouseSiblingLevels(levels, sameLevelRels) {
 }
 
 /**
+ * After spouse/sibling alignment, parents may have been moved to a deeper level.
+ * Propagate so every member with a parent gets level >= 1 + max(parent levels).
+ */
+function propagateDescendantLevels(levels, parentsMap) {
+  const result = { ...levels };
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [memberId, parentIds] of Object.entries(parentsMap)) {
+      if (!parentIds?.length) continue;
+      const parentLevels = parentIds.map((p) => result[p]).filter((l) => l !== undefined);
+      if (parentLevels.length === 0) continue;
+      const minChildLevel = 1 + Math.max(...parentLevels);
+      if ((result[memberId] ?? -1) < minChildLevel) {
+        result[memberId] = minChildLevel;
+        changed = true;
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Group member ids by level and sort levels.
  */
 function groupByLevel(members, levels) {
@@ -250,7 +273,8 @@ export function getLayoutedElements(members, relationships) {
 
   const { parentsMap } = buildParentMaps(members, parentRels);
   const levelsFromParent = assignLevels(members, parentsMap);
-  const levels = alignSpouseSiblingLevels(levelsFromParent, sameLevelRels);
+  const levelsAligned = alignSpouseSiblingLevels(levelsFromParent, sameLevelRels);
+  const levels = propagateDescendantLevels(levelsAligned, parentsMap);
   const partnerMap = buildSpousePairs(spouseRels);
   const { entitiesByLevel, memberToNodeId, coupleData } = buildEntitiesByLevel(
     members,
