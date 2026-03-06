@@ -8,6 +8,8 @@ import MemberPopover from "../components/MemberPopover";
 import AddMemberModal from "../components/AddMemberModal";
 import RelationshipTypeModal from "../components/RelationshipTypeModal";
 import ConfirmModal from "../components/ConfirmModal";
+import PhotoLibrarySidebar from "../components/PhotoLibrarySidebar";
+import PhotoViewerModal from "../components/PhotoViewerModal";
 import { formatDeathYear } from "../utils/memberDates";
 import { countDescendants } from "../utils/descendants";
 
@@ -21,6 +23,8 @@ export default function TreePage() {
   const [pendingConnection, setPendingConnection] = useState(null);
   const [addMemberThenLink, setAddMemberThenLink] = useState(null);
   const [deleteFromCard, setDeleteFromCard] = useState(null);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
 
   const handleGraphNodeClick = (nodeId, anchorRect, options) => {
     setSelectedMemberId(options?.memberId ?? nodeId);
@@ -109,6 +113,10 @@ export default function TreePage() {
   const canEdit = tree && (tree.role === "owner" || tree.role === "editor");
   const isOwner = tree?.role === "owner";
 
+  const familyPhotos = members
+    .filter((m) => m.photoUrl)
+    .map((m) => ({ url: m.photoUrl, name: m.name, memberId: m.id }));
+
   if (treeLoading || !tree) {
     return (
       <div style={styles.page}>
@@ -159,72 +167,89 @@ export default function TreePage() {
       </div>
 
       <div style={styles.viewArea}>
-        {view === "list" && selectedMemberId && (
-          <MemberDetail
-            placement="top"
-            treeId={treeId}
-            memberId={selectedMemberId}
-            canEdit={canEdit}
-            onClose={() => setSelectedMemberId(null)}
-            onDeleted={closePopover}
-            onRequestDelete={canEdit ? (id) => setDeleteFromCard({ memberId: id, memberName: members.find((m) => m.id === id)?.name ?? "" }) : undefined}
-          />
-        )}
-        {view === "graph" ? (
-          <div style={styles.graphWrap}>
-            <TreeGraph
-              members={members}
-              relationships={relationships}
-              layoutPositions={tree.layoutPositions ?? undefined}
-              onLayoutSave={canEdit ? (positions) => updateLayoutMutation.mutate(positions) : undefined}
-              onNodeClick={handleGraphNodeClick}
-              onConnectionRequest={canEdit ? setPendingConnection : undefined}
-              onAddChild={canEdit ? (memberId) => { setAddMemberThenLink({ type: "parent", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
-              onAddSpouse={canEdit ? (memberId) => { setAddMemberThenLink({ type: "spouse", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
-              onDelete={canEdit ? (memberId) => setDeleteFromCard({ memberId, memberName: members.find((m) => m.id === memberId)?.name ?? "" }) : undefined}
+        <div style={styles.mainContent}>
+          {view === "list" && selectedMemberId && (
+            <MemberDetail
+              placement="top"
+              treeId={treeId}
+              memberId={selectedMemberId}
+              canEdit={canEdit}
+              onClose={() => setSelectedMemberId(null)}
+              onDeleted={closePopover}
+              onRequestDelete={canEdit ? (id) => setDeleteFromCard({ memberId: id, memberName: members.find((m) => m.id === id)?.name ?? "" }) : undefined}
             />
-          </div>
-        ) : (
-          <section style={styles.section}>
-            <h2 style={styles.sectionTitle}>Members</h2>
-            {membersLoading ? (
-              <p style={styles.muted}>Loading members...</p>
-            ) : members.length === 0 ? (
-              <p style={styles.muted}>No members yet. {canEdit && "Add a member to get started."}</p>
-            ) : (
-              <ul style={styles.memberList}>
-                {members.map((m) => (
-                  <li
-                    key={m.id}
-                    style={{
-                      ...styles.memberItem,
-                      ...(selectedMemberId === m.id ? styles.memberItemSelected : {}),
-                    }}
-                    onClick={() => setSelectedMemberId(selectedMemberId === m.id ? null : m.id)}
-                  >
-                    <div style={styles.memberPhoto}>
-                      {m.photoUrl ? (
-                        <img src={m.photoUrl} alt="" style={styles.photoImg} />
-                      ) : (
-                        <span style={styles.photoPlaceholder}>{m.name.charAt(0)}</span>
-                      )}
-                    </div>
-                    <div>
-                      <strong>{m.name}</strong>
-                        {(m.birthDate || m.deathDate) && (
-                          <span style={styles.dates}>
-                            {m.birthDate ? new Date(m.birthDate).getFullYear() : "?"}
-                            –{formatDeathYear(m.deathDate)}
-                          </span>
+          )}
+          {view === "graph" ? (
+            <div style={styles.graphWrap}>
+              <TreeGraph
+                members={members}
+                relationships={relationships}
+                layoutPositions={tree.layoutPositions ?? undefined}
+                onLayoutSave={canEdit ? (positions) => updateLayoutMutation.mutate(positions) : undefined}
+                onNodeClick={handleGraphNodeClick}
+                onConnectionRequest={canEdit ? setPendingConnection : undefined}
+                onAddChild={canEdit ? (memberId) => { setAddMemberThenLink({ type: "parent", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
+                onAddSpouse={canEdit ? (memberId) => { setAddMemberThenLink({ type: "spouse", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
+                onDelete={canEdit ? (memberId) => setDeleteFromCard({ memberId, memberName: members.find((m) => m.id === memberId)?.name ?? "" }) : undefined}
+              />
+            </div>
+          ) : (
+            <section style={styles.section}>
+              <h2 style={styles.sectionTitle}>Members</h2>
+              {membersLoading ? (
+                <p style={styles.muted}>Loading members...</p>
+              ) : members.length === 0 ? (
+                <p style={styles.muted}>No members yet. {canEdit && "Add a member to get started."}</p>
+              ) : (
+                <ul style={styles.memberList}>
+                  {members.map((m) => (
+                    <li
+                      key={m.id}
+                      style={{
+                        ...styles.memberItem,
+                        ...(selectedMemberId === m.id ? styles.memberItemSelected : {}),
+                      }}
+                      onClick={() => setSelectedMemberId(selectedMemberId === m.id ? null : m.id)}
+                    >
+                      <div style={styles.memberPhoto}>
+                        {m.photoUrl ? (
+                          <img src={m.photoUrl} alt="" style={styles.photoImg} />
+                        ) : (
+                          <span style={styles.photoPlaceholder}>{m.name.charAt(0)}</span>
                         )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
+                      </div>
+                      <div>
+                        <strong>{m.name}</strong>
+                          {(m.birthDate || m.deathDate) && (
+                            <span style={styles.dates}>
+                              {m.birthDate ? new Date(m.birthDate).getFullYear() : "?"}
+                              –{formatDeathYear(m.deathDate)}
+                            </span>
+                          )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+        </div>
+        <PhotoLibrarySidebar
+          photos={familyPhotos}
+          onSelectPhoto={(index) => {
+            setPhotoViewerIndex(index);
+            setPhotoViewerOpen(true);
+          }}
+        />
       </div>
+
+      <PhotoViewerModal
+        open={photoViewerOpen}
+        photos={familyPhotos}
+        currentIndex={photoViewerIndex}
+        onIndexChange={setPhotoViewerIndex}
+        onClose={() => setPhotoViewerOpen(false)}
+      />
 
       {canEdit && (
         <AddMemberModal
@@ -329,6 +354,14 @@ const styles = {
     gridColumn: "1 / -1",
     minHeight: 0,
     padding: 24,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "row",
+    gap: 24,
+  },
+  mainContent: {
+    flex: 1,
+    minWidth: 0,
     overflow: "auto",
     display: "flex",
     flexDirection: "column",
