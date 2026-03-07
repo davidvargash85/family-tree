@@ -14,9 +14,10 @@ model User {
   displayName  String?  @map("display_name")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  ownedTrees   Tree[]         @relation("TreeOwner")
-  treeAccess   TreeAccess[]
-  sentInvites  Invitation[]   @relation("InvitedBy")
+  ownedTrees    Tree[]          @relation("TreeOwner")
+  treeAccess    TreeAccess[]
+  sentInvites   Invitation[]    @relation("InvitedBy")
+  publications  Publication[]   @relation("PublicationCreator")
 }
 
 model Tree {
@@ -66,15 +67,17 @@ model Photo {
 }
 
 model Publication {
-  id        String   @id @default(cuid())
-  treeId    String   @map("tree_id")
-  content   String?  // text / caption
-  photoId   String?  @unique @map("photo_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String    @id @default(cuid())
+  treeId      String    @map("tree_id")
+  content     String?   // text / caption
+  photoId     String?   @unique @map("photo_id")
+  createdById String?   @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  tree  Tree             @relation(fields: [treeId], references: [id], onDelete: Cascade)
-  photo Photo?           @relation(fields: [photoId], references: [id], onDelete: SetNull)
-  tags  PublicationTag[]
+  tree      Tree             @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  photo     Photo?            @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  createdBy User?             @relation("PublicationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  tags      PublicationTag[]
 
   @@index([treeId])
   @@index([createdAt])

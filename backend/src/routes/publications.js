@@ -35,6 +35,10 @@ function tagsInclude() {
   }
 }
 
+const createdByInclude = {
+  createdBy: { select: { id: true, displayName: true, email: true } },
+};
+
 function toPublicationResponse(pub) {
   return {
     id: pub.id,
@@ -46,6 +50,9 @@ function toPublicationResponse(pub) {
       : null,
     tags: (pub.tags || []).map((t) => ({ memberId: t.memberId, member: t.member })),
     createdAt: pub.createdAt,
+    createdBy: pub.createdBy
+      ? { id: pub.createdBy.id, displayName: pub.createdBy.displayName, email: pub.createdBy.email }
+      : null,
   };
 }
 
@@ -58,6 +65,7 @@ publicationsRouter.get(
       orderBy: { createdAt: "desc" },
       include: {
         photo: true,
+        ...createdByInclude,
         ...tagsInclude(),
       },
     });
@@ -71,7 +79,7 @@ publicationsRouter.get(
   async (req, res) => {
     const pub = await prisma.publication.findFirst({
       where: { id: req.params.publicationId, treeId: req.params.treeId },
-      include: { photo: true, ...tagsInclude() },
+      include: { photo: true, ...createdByInclude, ...tagsInclude() },
     });
     if (!pub) return res.status(404).json({ error: "Publication not found" });
     return res.json({ publication: toPublicationResponse(pub) });
@@ -125,8 +133,8 @@ publicationsRouter.post(
     }
 
     const publication = await prisma.publication.create({
-      data: { treeId, content, photoId },
-      include: { photo: true, ...tagsInclude() },
+      data: { treeId, content, photoId, createdById: req.user.id },
+      include: { photo: true, ...createdByInclude, ...tagsInclude() },
     });
 
     if (tagIds.length > 0) {
@@ -146,7 +154,7 @@ publicationsRouter.post(
 
     const updated = await prisma.publication.findUnique({
       where: { id: publication.id },
-      include: { photo: true, ...tagsInclude() },
+      include: { photo: true, ...createdByInclude, ...tagsInclude() },
     });
     return res.status(201).json({ publication: toPublicationResponse(updated) });
   }
@@ -160,12 +168,16 @@ publicationsRouter.patch(
       typeof req.body.content === "string" ? req.body.content.trim() ?? undefined : undefined;
     const pub = await prisma.publication.findFirst({
       where: { id: req.params.publicationId, treeId: req.params.treeId },
+      include: { ...createdByInclude },
     });
     if (!pub) return res.status(404).json({ error: "Publication not found" });
+    if (pub.createdById !== req.user.id) {
+      return res.status(403).json({ error: "Only the creator of this post can edit it" });
+    }
     const updated = await prisma.publication.update({
       where: { id: pub.id },
       data: { content },
-      include: { photo: true, ...tagsInclude() },
+      include: { photo: true, ...createdByInclude, ...tagsInclude() },
     });
     return res.json({ publication: toPublicationResponse(updated) });
   }
@@ -180,6 +192,9 @@ publicationsRouter.delete(
       include: { photo: true },
     });
     if (!pub) return res.status(404).json({ error: "Publication not found" });
+    if (pub.createdById != null && pub.createdById !== req.user.id) {
+      return res.status(403).json({ error: "Only the creator of this post can delete it" });
+    }
     if (pub.photo) {
       const fullPath = path.join(__dirname, "..", "..", pub.photo.filePath);
       try {

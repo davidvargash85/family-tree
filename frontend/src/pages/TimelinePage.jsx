@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { useAuth } from "../context/AuthContext";
 import AddPublicationModal from "../components/AddPublicationModal";
 import ConfirmModal from "../components/ConfirmModal";
 
@@ -21,9 +22,12 @@ const formatDate = (dateStr) => {
 
 export default function TimelinePage() {
   const { treeId } = useParams();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showAddPublication, setShowAddPublication] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editContent, setEditContent] = useState("");
 
   const { data: treeData } = useQuery({
     queryKey: ["tree", treeId],
@@ -66,6 +70,16 @@ export default function TimelinePage() {
       queryClient.invalidateQueries({ queryKey: ["publications", treeId] });
       queryClient.invalidateQueries({ queryKey: ["treePhotos", treeId] });
       setDeleteTarget(null);
+    },
+  });
+
+  const updatePublication = useMutation({
+    mutationFn: ({ id, content }) =>
+      api.patch(`/trees/${treeId}/publications/${id}`, { content }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publications", treeId] });
+      setEditingId(null);
+      setEditContent("");
     },
   });
 
@@ -132,41 +146,104 @@ export default function TimelinePage() {
               </p>
             </section>
           ) : (
-            publications.map((pub) => (
-              <article key={pub.id} style={styles.card}>
-                <div style={styles.cardMeta}>
-                  <span style={styles.cardTime}>{formatDate(pub.createdAt)}</span>
-                  {canEdit && (
-                    <button
-                      type="button"
-                      style={styles.deleteBtn}
-                      onClick={() => setDeleteTarget({ id: pub.id })}
-                      aria-label="Delete post"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-                {pub.photo && (
-                  <div style={styles.cardPhotoWrap}>
-                    <img
-                      src={pub.photo.filePath}
-                      alt=""
-                      style={styles.cardPhoto}
-                    />
+            publications.map((pub) => {
+              const isCreator = user?.id && pub.createdBy?.id === user.id;
+              const isEditing = editingId === pub.id;
+              return (
+                <article key={pub.id} style={styles.card}>
+                  <div style={styles.cardMeta}>
+                    <span style={styles.cardTime}>
+                      {formatDate(pub.createdAt)}
+                      {pub.createdBy?.displayName && (
+                        <span style={styles.creatorName}>
+                          {" · "}
+                          {pub.createdBy.displayName}
+                        </span>
+                      )}
+                    </span>
+                    {isCreator && !isEditing && (
+                      <span style={styles.cardActions}>
+                        <button
+                          type="button"
+                          style={styles.editBtn}
+                          onClick={() => {
+                            setEditingId(pub.id);
+                            setEditContent(pub.content ?? "");
+                          }}
+                          aria-label="Edit post"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.deleteBtn}
+                          onClick={() => setDeleteTarget({ id: pub.id })}
+                          aria-label="Delete post"
+                        >
+                          Delete
+                        </button>
+                      </span>
+                    )}
                   </div>
-                )}
-                {pub.content && (
-                  <p style={styles.cardContent}>{pub.content}</p>
-                )}
-                {pub.tags?.length > 0 && (
-                  <p style={styles.cardTags}>
-                    With{" "}
-                    {pub.tags.map((t) => t.member?.name).filter(Boolean).join(", ")}
-                  </p>
-                )}
-              </article>
-            ))
+                  {pub.photo && (
+                    <div style={styles.cardPhotoWrap}>
+                      <img
+                        src={pub.photo.filePath}
+                        alt=""
+                        style={styles.cardPhoto}
+                      />
+                    </div>
+                  )}
+                  {isEditing ? (
+                    <div style={styles.editForm}>
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        style={styles.editTextarea}
+                        rows={4}
+                        maxLength={2000}
+                        autoFocus
+                      />
+                      <div style={styles.editActions}>
+                        <button
+                          type="button"
+                          style={styles.cancelEditBtn}
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditContent("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.saveEditBtn}
+                          onClick={() =>
+                            updatePublication.mutate({
+                              id: pub.id,
+                              content: editContent.trim() || null,
+                            })
+                          }
+                          disabled={updatePublication.isPending}
+                        >
+                          {updatePublication.isPending ? "Saving…" : "Save"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    pub.content && (
+                      <p style={styles.cardContent}>{pub.content}</p>
+                    )
+                  )}
+                  {pub.tags?.length > 0 && (
+                    <p style={styles.cardTags}>
+                      With{" "}
+                      {pub.tags.map((t) => t.member?.name).filter(Boolean).join(", ")}
+                    </p>
+                  )}
+                </article>
+              );
+            })
           )}
         </div>
       </div>
@@ -272,6 +349,16 @@ const styles = {
     borderBottom: "1px solid #f3f4f6",
   },
   cardTime: { fontSize: 13, color: "#6b7280" },
+  creatorName: { color: "#9ca3af", fontWeight: 400 },
+  cardActions: { display: "flex", gap: 8 },
+  editBtn: {
+    background: "none",
+    border: "none",
+    color: "#2563eb",
+    fontSize: 13,
+    cursor: "pointer",
+    padding: "2px 6px",
+  },
   deleteBtn: {
     background: "none",
     border: "none",
@@ -279,6 +366,36 @@ const styles = {
     fontSize: 13,
     cursor: "pointer",
     padding: "2px 6px",
+  },
+  editForm: { padding: 16 },
+  editTextarea: {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1px solid #d1d5db",
+    borderRadius: 8,
+    fontSize: 15,
+    minHeight: 80,
+    resize: "vertical",
+    boxSizing: "border-box",
+  },
+  editActions: { display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" },
+  cancelEditBtn: {
+    padding: "8px 16px",
+    background: "#f3f4f6",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontSize: 14,
+  },
+  saveEditBtn: {
+    padding: "8px 16px",
+    background: "#1e3a5f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 500,
   },
   cardPhotoWrap: { background: "#000" },
   cardPhoto: {
