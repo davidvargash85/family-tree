@@ -88,7 +88,11 @@ function TreeGraphInner({
         node.type === "couple" && node.data?.members?.[0]?.id
           ? node.data.members[0].id
           : node.id;
-      onNodeClick?.(node.id, rect ?? null, { memberId });
+      const memberIds =
+        node.type === "couple" && node.data?.memberIds?.length >= 2
+          ? node.data.memberIds
+          : [node.id];
+      onNodeClick?.(node.id, rect ?? null, { memberId, memberIds });
     },
     [onNodeClick]
   );

@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import TreePage from "./pages/TreePage";
 import InvitePage from "./pages/InvitePage";
 import TreeSettings from "./pages/TreeSettings";
+import TimelinePage from "./pages/TimelinePage";
 
 function ProtectedRoute({ children }) {
   const { user, ready } = useAuth();
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/tree/:treeId" element={<ProtectedRoute><TreePage /></ProtectedRoute>} />
+        <Route path="/tree/:treeId/timeline" element={<ProtectedRoute><TimelinePage /></ProtectedRoute>} />
         <Route path="/tree/:treeId/settings" element={<ProtectedRoute><TreeSettings /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

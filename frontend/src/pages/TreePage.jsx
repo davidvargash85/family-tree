@@ -10,6 +10,7 @@ import RelationshipTypeModal from "../components/RelationshipTypeModal";
 import ConfirmModal from "../components/ConfirmModal";
 import PhotoLibrarySidebar from "../components/PhotoLibrarySidebar";
 import PhotoViewerModal from "../components/PhotoViewerModal";
+import AddPhotoModal from "../components/AddPhotoModal";
 import { formatDeathYear } from "../utils/memberDates";
 import { countDescendants } from "../utils/descendants";
 
@@ -17,6 +18,7 @@ export default function TreePage() {
   const { treeId } = useParams();
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [selectedMemberIds, setSelectedMemberIds] = useState(null);
   const [popoverAnchorRect, setPopoverAnchorRect] = useState(null);
   const [view, setView] = useState("graph");
   const [showAddMember, setShowAddMember] = useState(false);
@@ -25,13 +27,16 @@ export default function TreePage() {
   const [deleteFromCard, setDeleteFromCard] = useState(null);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
+  const [showAddPhoto, setShowAddPhoto] = useState(false);
 
   const handleGraphNodeClick = (nodeId, anchorRect, options) => {
     setSelectedMemberId(options?.memberId ?? nodeId);
+    setSelectedMemberIds(options?.memberIds ?? (options?.memberId ? [options.memberId] : null));
     setPopoverAnchorRect(anchorRect ?? null);
   };
   const closePopover = () => {
     setSelectedMemberId(null);
+    setSelectedMemberIds(null);
     setPopoverAnchorRect(null);
   };
 
@@ -56,6 +61,15 @@ export default function TreePage() {
     queryKey: ["relationships", treeId],
     queryFn: async () => {
       const { data } = await api.get(`/trees/${treeId}/relationships`);
+      return data;
+    },
+    enabled: !!treeId,
+  });
+
+  const { data: treePhotosData } = useQuery({
+    queryKey: ["treePhotos", treeId],
+    queryFn: async () => {
+      const { data } = await api.get(`/trees/${treeId}/photos`);
       return data;
     },
     enabled: !!treeId,
@@ -107,15 +121,54 @@ export default function TreePage() {
     },
   });
 
+  const uploadTreePhotoMutation = useMutation({
+    mutationFn: (formData) => api.post(`/trees/${treeId}/photos`, formData),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["treePhotos", treeId] });
+      setShowAddPhoto(false);
+    },
+  });
+
   const tree = treeData?.tree;
   const members = membersData?.members ?? [];
   const relationships = relsData?.relationships ?? [];
+  const treePhotos = treePhotosData?.photos ?? [];
   const canEdit = tree && (tree.role === "owner" || tree.role === "editor");
   const isOwner = tree?.role === "owner";
 
-  const familyPhotos = members
-    .filter((m) => m.photoUrl)
-    .map((m) => ({ url: m.photoUrl, name: m.name, memberId: m.id }));
+  const familyPhotos = [
+    ...members
+      .filter((m) => m.photoUrl)
+      .map((m) => ({
+        source: "member",
+        url: m.photoUrl,
+        name: m.name,
+        memberId: m.id,
+        caption: null,
+        photoId: null,
+        taggedMembers: [{ id: m.id, name: m.name }],
+      })),
+    ...treePhotos.map((p) => ({
+      source: "photo",
+      url: p.filePath,
+      name: p.caption || (p.tags?.length ? `Tagged: ${p.tags.map((t) => t.member?.name).filter(Boolean).join(", ")}` : "Photo"),
+      caption: p.caption,
+      photoId: p.id,
+      memberId: null,
+      taggedMembers: (p.tags || []).map((t) => ({ id: t.member?.id, name: t.member?.name ?? "" })),
+    })),
+  ];
+
+  const displayedPhotos =
+    selectedMemberIds?.length > 0
+      ? familyPhotos.filter((p) => {
+          const idsInPhoto = new Set([
+            ...(p.memberId ? [p.memberId] : []),
+            ...(p.taggedMembers ?? []).map((t) => t.id),
+          ]);
+          return selectedMemberIds.some((id) => idsInPhoto.has(id));
+        })
+      : familyPhotos;
 
   if (treeLoading || !tree) {
     return (
@@ -131,6 +184,9 @@ export default function TreePage() {
         <Link to="/" style={styles.backLink}>← Dashboard</Link>
         <h1 style={styles.title}>{tree.name}</h1>
         <span style={styles.badge}>{tree.role}</span>
+        <Link to={`/tree/${treeId}/timeline`} style={styles.navLink}>
+          Timeline
+        </Link>
         {isOwner && (
           <Link to={`/tree/${treeId}/settings`} style={styles.settingsLink}>
             Settings
@@ -174,7 +230,10 @@ export default function TreePage() {
               treeId={treeId}
               memberId={selectedMemberId}
               canEdit={canEdit}
-              onClose={() => setSelectedMemberId(null)}
+              onClose={() => {
+                setSelectedMemberId(null);
+                setSelectedMemberIds(null);
+              }}
               onDeleted={closePopover}
               onRequestDelete={canEdit ? (id) => setDeleteFromCard({ memberId: id, memberName: members.find((m) => m.id === id)?.name ?? "" }) : undefined}
             />
@@ -209,7 +268,11 @@ export default function TreePage() {
                         ...styles.memberItem,
                         ...(selectedMemberId === m.id ? styles.memberItemSelected : {}),
                       }}
-                      onClick={() => setSelectedMemberId(selectedMemberId === m.id ? null : m.id)}
+                      onClick={() => {
+                        const next = selectedMemberId === m.id ? null : m.id;
+                        setSelectedMemberId(next);
+                        setSelectedMemberIds(next ? [next] : null);
+                      }}
                     >
                       <div style={styles.memberPhoto}>
                         {m.photoUrl ? (
@@ -235,20 +298,25 @@ export default function TreePage() {
           )}
         </div>
         <PhotoLibrarySidebar
-          photos={familyPhotos}
+          photos={displayedPhotos}
           onSelectPhoto={(index) => {
             setPhotoViewerIndex(index);
             setPhotoViewerOpen(true);
           }}
+          canEdit={canEdit}
+          onAddPhoto={canEdit ? () => setShowAddPhoto(true) : undefined}
         />
       </div>
 
       <PhotoViewerModal
         open={photoViewerOpen}
-        photos={familyPhotos}
+        photos={displayedPhotos}
         currentIndex={photoViewerIndex}
         onIndexChange={setPhotoViewerIndex}
         onClose={() => setPhotoViewerOpen(false)}
+        canEdit={canEdit}
+        treeId={treeId}
+        onTagsUpdated={() => queryClient.invalidateQueries({ queryKey: ["treePhotos", treeId] })}
       />
 
       {canEdit && (
@@ -294,6 +362,16 @@ export default function TreePage() {
         />
       )}
 
+      {canEdit && (
+        <AddPhotoModal
+          open={showAddPhoto}
+          onClose={() => setShowAddPhoto(false)}
+          onSubmit={(formData) => uploadTreePhotoMutation.mutate(formData)}
+          isPending={uploadTreePhotoMutation.isPending}
+          treeId={treeId}
+        />
+      )}
+
       {view === "graph" && selectedMemberId && (
         <MemberPopover
           treeId={treeId}
@@ -336,7 +414,8 @@ const styles = {
     fontSize: 12,
     fontWeight: 600,
   },
-  settingsLink: { fontSize: 14, color: "#2563eb" },
+  navLink: { fontSize: 14, color: "#2563eb", textDecoration: "none" },
+  settingsLink: { fontSize: 14, color: "#2563eb", textDecoration: "none" },
   toolbar: {
     gridColumn: "1 / -1",
     display: "flex",

@@ -51,6 +51,7 @@ Frontend runs at `http://localhost:5173` and proxies `/api` and `/uploads` to th
 - **Photos**: Upload/remove member photo (one per member)
 - **Relationships**: Add/remove parent, child, spouse, sibling between members
 - **Tree view**: List view and graph view (React Flow)
+- **Timeline**: Collective feed (like a Facebook timeline) for each tree. Add publications (text and/or photo), tag members; timeline photos also appear in the tree view photo library.
 - **Sharing**: Owner can invite by email with role (viewer or editor); invite link can be copied and shared; accept flow for logged-in or new users
 - **Settings**: Tree settings (owner only): rename, manage invitations
 
@@ -60,6 +61,7 @@ Frontend runs at `http://localhost:5173` and proxies `/api` and `/uploads` to th
 - `GET/POST /trees`, `GET/PATCH/DELETE /trees/:id`
 - `GET/POST /trees/:treeId/members`, `GET/PATCH/DELETE /trees/:treeId/members/:memberId`
 - `POST /trees/:treeId/members/:memberId/photo` (multipart), `DELETE .../photo`
+- `GET/POST /trees/:treeId/publications`, `GET/PATCH/DELETE /trees/:treeId/publications/:id`, `POST/DELETE .../publications/:id/tags`
 - `GET/POST /trees/:treeId/relationships`, `DELETE /trees/:treeId/relationships/:id`
 - `POST/GET/DELETE /trees/:treeId/invitations` (owner only)
 - `GET /invitations/by-token/:token`, `POST /invitations/accept`

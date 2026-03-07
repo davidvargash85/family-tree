@@ -26,6 +26,7 @@ const styles = {
     alignContent: "start",
   },
   thumb: {
+    position: "relative",
     aspectRatio: "1",
     borderRadius: 8,
     overflow: "hidden",
@@ -48,23 +49,62 @@ const styles = {
   },
 };
 
-export default function PhotoLibrarySidebar({ photos, onSelectPhoto }) {
+const headerStyles = {
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 },
+  title: { margin: 0, fontSize: 15, fontWeight: 600, color: "#1e3a5f" },
+  addBtn: {
+    padding: "6px 10px",
+    fontSize: 12,
+    background: "#1e3a5f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  },
+  badge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    background: "rgba(0,0,0,0.65)",
+    color: "#fff",
+    fontSize: 10,
+    padding: "2px 5px",
+    borderRadius: 4,
+  },
+};
+
+export default function PhotoLibrarySidebar({ photos, onSelectPhoto, canEdit, onAddPhoto }) {
   if (!photos.length) {
     return (
       <aside style={styles.sidebar}>
-        <h2 style={styles.title}>Photos</h2>
-        <p style={styles.empty}>No photos yet. Add member photos to see them here.</p>
+        <div style={headerStyles.header}>
+          <h2 style={headerStyles.title}>Photos</h2>
+          {canEdit && onAddPhoto && (
+            <button type="button" onClick={onAddPhoto} style={headerStyles.addBtn}>
+              Add photo
+            </button>
+          )}
+        </div>
+        <p style={styles.empty}>No photos yet. Add member photos or upload a photo to see them here.</p>
       </aside>
     );
   }
 
   return (
     <aside style={styles.sidebar}>
-      <h2 style={styles.title}>Photos</h2>
+      <div style={headerStyles.header}>
+        <h2 style={headerStyles.title}>Photos</h2>
+        {canEdit && onAddPhoto && (
+          <button type="button" onClick={onAddPhoto} style={headerStyles.addBtn}>
+            Add photo
+          </button>
+        )}
+      </div>
       <div style={styles.grid}>
         {photos.map((p, i) => (
           <button
-            key={p.memberId ?? i}
+            key={p.photoId ?? p.memberId ?? i}
             type="button"
             style={styles.thumb}
             onClick={() => onSelectPhoto?.(i)}
@@ -76,9 +116,12 @@ export default function PhotoLibrarySidebar({ photos, onSelectPhoto }) {
               e.currentTarget.style.borderColor = "transparent";
               e.currentTarget.style.boxShadow = "none";
             }}
-            aria-label={p.name ? `View photo of ${p.name}` : "View photo"}
+            aria-label={p.name ? `View photo: ${p.name}` : "View photo"}
           >
             <img src={p.url} alt="" style={styles.thumbImg} />
+            {p.taggedMembers?.length > 1 && (
+              <span style={headerStyles.badge}>{p.taggedMembers.length} people</span>
+            )}
           </button>
         ))}
       </div>

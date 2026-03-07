@@ -27,11 +27,13 @@ model Tree {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  owner        User         @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members      Member[]
+  owner         User          @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       Member[]
   relationships Relationship[]
-  invitations  Invitation[]
-  access       TreeAccess[]
+  invitations   Invitation[]
+  access        TreeAccess[]
+  photos        Photo[]
+  publications  Publication[]
 }
 
 model Member {
@@ -44,9 +46,62 @@ model Member {
   photoUrl  String?   @map("photo_url")
   createdAt DateTime  @default(now()) @map("created_at")
 
-  tree          Tree           @relation(fields: [treeId], references: [id], onDelete: Cascade)
-  relsAsA       Relationship[] @relation("MemberA")
-  relsAsB       Relationship[] @relation("MemberB")
+  tree             Tree             @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  relsAsA          Relationship[]   @relation("MemberA")
+  relsAsB          Relationship[]   @relation("MemberB")
+  photoTags        PhotoTag[]
+  publicationTags  PublicationTag[]
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  treeId    String   @map("tree_id")
+  filePath  String   @map("file_path")
+  caption   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tree         Tree          @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  tags        PhotoTag[]
+  publication Publication?
+}
+
+model Publication {
+  id        String   @id @default(cuid())
+  treeId    String   @map("tree_id")
+  content   String?  // text / caption
+  photoId   String?  @unique @map("photo_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tree  Tree             @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  photo Photo?           @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  tags  PublicationTag[]
+
+  @@index([treeId])
+  @@index([createdAt])
+}
+
+model PublicationTag {
+  publicationId String @map("publication_id")
+  memberId      String @map("member_id")
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  member      Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([publicationId, memberId])
+  @@index([publicationId])
+  @@index([memberId])
+}
+
+model PhotoTag {
+  photoId  String @map("photo_id")
+  memberId String @map("member_id")
+
+  photo  Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([photoId, memberId])
+  @@index([photoId])
+  @@index([memberId])
 }
 
 model Relationship {

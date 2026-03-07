@@ -8,6 +8,8 @@ import { membersRouter } from "./routes/members.js";
 import { relationshipsRouter } from "./routes/relationships.js";
 import { invitationsRouter } from "./routes/invitations.js";
 import { photosRouter } from "./routes/photos.js";
+import { treePhotosRouter } from "./routes/treePhotos.js";
+import { publicationsRouter } from "./routes/publications.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -41,6 +43,8 @@ app.use("/trees", treesRouter);
 app.use("/trees", membersRouter);
 app.use("/trees", relationshipsRouter);
 app.use("/trees", photosRouter);
+app.use("/trees", treePhotosRouter);
+app.use("/trees", publicationsRouter);
 app.use("/invitations", invitationsRouter);
 
 app.get("/health", (req, res) => res.json({ ok: true }));

@@ -49,16 +49,22 @@ const styles = {
   muted: { color: "#666", margin: "0.5rem 0", fontSize: "0.9rem" },
   treeList: { listStyle: "none", margin: 0, padding: 0 },
   treeItem: { marginBottom: "0.5rem" },
-  treeLink: {
-    display: "block",
+  treeRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
     padding: "0.75rem",
     background: "#f9f9f9",
     borderRadius: "6px",
+  },
+  treeLink: {
+    flex: 1,
     textDecoration: "none",
     color: "inherit",
   },
   treeName: { display: "block", fontWeight: 500 },
   treeMeta: { display: "block", fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" },
+  timelineLink: { fontSize: "0.85rem", color: "#2563eb", textDecoration: "none" },
 };
 
 export default function Dashboard() {
@@ -121,12 +127,17 @@ export default function Dashboard() {
             <ul style={styles.treeList}>
               {trees.map((t) => (
                 <li key={t.id} style={styles.treeItem}>
-                  <Link to={`/tree/${t.id}`} style={styles.treeLink}>
-                    <span style={styles.treeName}>{t.name}</span>
-                    <span style={styles.treeMeta}>
-                      {t.memberCount} member{t.memberCount !== 1 ? "s" : ""} · {t.role}
-                    </span>
-                  </Link>
+                  <div style={styles.treeRow}>
+                    <Link to={`/tree/${t.id}`} style={styles.treeLink}>
+                      <span style={styles.treeName}>{t.name}</span>
+                      <span style={styles.treeMeta}>
+                        {t.memberCount} member{t.memberCount !== 1 ? "s" : ""} · {t.role}
+                      </span>
+                    </Link>
+                    <Link to={`/tree/${t.id}/timeline`} style={styles.timelineLink}>
+                      Timeline
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>
