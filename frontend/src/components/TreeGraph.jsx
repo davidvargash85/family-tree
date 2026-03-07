@@ -47,8 +47,8 @@ function TreeGraphInner({
   onDelete,
 }) {
   const { nodes: layoutNodes, edges: initialEdges } = useMemo(
-    () => getLayoutedElements(members, relationships),
-    [members, relationships]
+    () => getLayoutedElements(members, relationships, layoutPositions ?? undefined),
+    [members, relationships, layoutPositions]
   );
 
   const initialNodes = useMemo(() => {

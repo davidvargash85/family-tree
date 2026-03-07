@@ -166,11 +166,25 @@ function buildEntitiesByLevel(members, levels, partnerMap) {
 /**
  * Compute x,y positions per entity. Children are centered under their parent;
  * siblings are grouped and spaced; overlaps are resolved.
+ * If layoutPositions is provided, existing nodes keep their saved position and
+ * new nodes are placed below their parent's (saved or computed) position.
  */
-function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId) {
+function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId, layoutPositions) {
   const { NODE_WIDTH, NODE_HEIGHT, LEVEL_GAP, NODE_GAP } = LAYOUT;
   const positionByEntity = {};
   const slotWidth = NODE_WIDTH + NODE_GAP;
+
+  // Seed with saved positions so new nodes can be placed relative to their parent's actual position
+  if (layoutPositions && typeof layoutPositions === "object") {
+    entitiesByLevel.forEach(({ entityIds }) => {
+      entityIds.forEach((entityId) => {
+        const saved = layoutPositions[entityId];
+        if (saved && typeof saved.x === "number" && typeof saved.y === "number") {
+          positionByEntity[entityId] = { x: saved.x, y: saved.y };
+        }
+      });
+    });
+  }
 
   entitiesByLevel.forEach(({ level, entityIds }, levelIndex) => {
     const levelY = levelIndex * (NODE_HEIGHT + LEVEL_GAP);
@@ -189,46 +203,57 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
           ? parentNodeIds.reduce((s, nid) => s + (positionByEntity[nid]?.x ?? 0), 0) /
             parentNodeIds.length
           : null;
-      return { entityId, preferredX };
+      const parentY =
+        parentNodeIds.length > 0
+          ? Math.max(...parentNodeIds.map((nid) => positionByEntity[nid]?.y ?? -1e9))
+          : null;
+      const preferredY = parentY != null && parentY >= 0 ? parentY + NODE_HEIGHT + LEVEL_GAP : levelY;
+      return { entityId, preferredX, preferredY };
     });
 
-    const hasParents = withPreferredX.some((e) => e.preferredX != null);
+    // Skip entities that already have a position from layoutPositions
+    const toPlace = withPreferredX.filter((e) => positionByEntity[e.entityId] == null);
+    if (toPlace.length === 0) return;
+
+    const hasParents = toPlace.some((e) => e.preferredX != null);
     if (!hasParents) {
-      withPreferredX.sort((a, b) => entityIds.indexOf(a.entityId) - entityIds.indexOf(b.entityId));
-      withPreferredX.forEach(({ entityId }, i) => {
-        const center = (entityIds.length - 1) / 2;
+      toPlace.sort((a, b) => entityIds.indexOf(a.entityId) - entityIds.indexOf(b.entityId));
+      toPlace.forEach(({ entityId, preferredY }, i) => {
+        const center = (toPlace.length - 1) / 2;
         positionByEntity[entityId] = {
           x: (i - center) * slotWidth,
-          y: levelY,
+          y: preferredY,
         };
       });
       return;
     }
 
-    withPreferredX.sort((a, b) => (a.preferredX ?? -1e9) - (b.preferredX ?? -1e9));
+    toPlace.sort((a, b) => (a.preferredX ?? -1e9) - (b.preferredX ?? -1e9));
 
     const groups = [];
     const tolerance = 1;
     let i = 0;
-    while (i < withPreferredX.length) {
-      const preferred = withPreferredX[i].preferredX;
+    while (i < toPlace.length) {
+      const preferred = toPlace[i].preferredX;
       const group = [];
       while (
-        i < withPreferredX.length &&
+        i < toPlace.length &&
         (preferred == null
-          ? withPreferredX[i].preferredX == null
-          : withPreferredX[i].preferredX != null &&
-            Math.abs(withPreferredX[i].preferredX - preferred) < tolerance)
+          ? toPlace[i].preferredX == null
+          : toPlace[i].preferredX != null &&
+            Math.abs(toPlace[i].preferredX - preferred) < tolerance)
       ) {
-        group.push(withPreferredX[i].entityId);
+        group.push(toPlace[i]);
         i++;
       }
-      if (group.length)
-        groups.push({ preferredX: preferred ?? 0, entityIds: group });
+      if (group.length) {
+        const preferredY = group[0].preferredY;
+        groups.push({ preferredX: preferred ?? 0, preferredY, entityIds: group.map((g) => g.entityId) });
+      }
     }
 
     let rightEdge = -Infinity;
-    groups.forEach(({ preferredX, entityIds: groupIds }) => {
+    groups.forEach(({ preferredX, preferredY, entityIds: groupIds }) => {
       const n = groupIds.length;
       const totalWidth = (n - 1) * slotWidth + NODE_WIDTH;
       let leftX = preferredX - totalWidth / 2;
@@ -236,18 +261,20 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
         leftX = rightEdge + NODE_GAP;
       }
       groupIds.forEach((entityId, j) => {
-        positionByEntity[entityId] = { x: leftX + j * slotWidth, y: levelY };
+        positionByEntity[entityId] = { x: leftX + j * slotWidth, y: preferredY };
       });
       rightEdge = leftX + totalWidth;
     });
   });
 
-  const allX = Object.values(positionByEntity).map((p) => p.x);
-  const minX = Math.min(0, ...allX);
-
-  Object.keys(positionByEntity).forEach((id) => {
-    positionByEntity[id].x += -minX;
-  });
+  // When we have saved positions, don't shift so we don't move the user's layout
+  if (!layoutPositions || Object.keys(layoutPositions).length === 0) {
+    const allX = Object.values(positionByEntity).map((p) => p.x);
+    const minX = Math.min(0, ...allX);
+    Object.keys(positionByEntity).forEach((id) => {
+      positionByEntity[id].x += -minX;
+    });
+  }
 
   return positionByEntity;
 }
@@ -261,8 +288,10 @@ function firstName(name) {
 /**
  * Build React Flow nodes and edges from members, relationships, and positions.
  * Couples are merged into one node; edges point to couple node when member is in a couple.
+ * layoutPositions: optional { [nodeId]: { x, y } } so saved positions are preserved and
+ * new nodes are placed below their parent's actual position.
  */
-export function getLayoutedElements(members, relationships) {
+export function getLayoutedElements(members, relationships, layoutPositions = null) {
   const memberIds = new Set(members.map((m) => m.id));
   const rels = relationships.filter(
     (r) => memberIds.has(r.memberAId) && memberIds.has(r.memberBId)
@@ -284,7 +313,8 @@ export function getLayoutedElements(members, relationships) {
   const positionByEntity = computePositionsForEntities(
     entitiesByLevel,
     parentsMap,
-    memberToNodeId
+    memberToNodeId,
+    layoutPositions
   );
 
   const nodes = [];
