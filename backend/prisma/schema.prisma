@@ -18,6 +18,7 @@ model User {
   treeAccess    TreeAccess[]
   sentInvites   Invitation[]    @relation("InvitedBy")
   publications  Publication[]   @relation("PublicationCreator")
+  comments      Comment[]       @relation("CommentAuthor")
 }
 
 model Tree {
@@ -78,9 +79,27 @@ model Publication {
   photo     Photo?            @relation(fields: [photoId], references: [id], onDelete: SetNull)
   createdBy User?             @relation("PublicationCreator", fields: [createdById], references: [id], onDelete: SetNull)
   tags      PublicationTag[]
+  comments  Comment[]
 
   @@index([treeId])
   @@index([createdAt])
+}
+
+model Comment {
+  id             String    @id @default(cuid())
+  publicationId  String    @map("publication_id")
+  authorId       String    @map("author_id")
+  content        String
+  parentId       String?   @map("parent_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]   @relation("CommentReplies")
+  author      User        @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([publicationId])
+  @@index([parentId])
 }
 
 model PublicationTag {

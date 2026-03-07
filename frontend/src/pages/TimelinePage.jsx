@@ -5,6 +5,7 @@ import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import AddPublicationModal from "../components/AddPublicationModal";
 import ConfirmModal from "../components/ConfirmModal";
+import PublicationComments from "../components/PublicationComments";
 
 const formatDate = (dateStr) => {
   const d = new Date(dateStr);
@@ -241,6 +242,7 @@ export default function TimelinePage() {
                       {pub.tags.map((t) => t.member?.name).filter(Boolean).join(", ")}
                     </p>
                   )}
+                  <PublicationComments treeId={treeId} publicationId={pub.id} />
                 </article>
               );
             })

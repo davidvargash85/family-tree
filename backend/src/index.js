@@ -10,6 +10,7 @@ import { invitationsRouter } from "./routes/invitations.js";
 import { photosRouter } from "./routes/photos.js";
 import { treePhotosRouter } from "./routes/treePhotos.js";
 import { publicationsRouter } from "./routes/publications.js";
+import { commentsRouter } from "./routes/comments.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -45,6 +46,7 @@ app.use("/trees", relationshipsRouter);
 app.use("/trees", photosRouter);
 app.use("/trees", treePhotosRouter);
 app.use("/trees", publicationsRouter);
+app.use("/trees/:treeId/publications/:publicationId/comments", commentsRouter);
 app.use("/invitations", invitationsRouter);
 
 app.get("/health", (req, res) => res.json({ ok: true }));
