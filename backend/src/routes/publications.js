@@ -62,7 +62,7 @@ publicationsRouter.get(
   async (req, res) => {
     const list = await prisma.publication.findMany({
       where: { treeId: req.params.treeId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ lastActivityAt: "desc" }, { createdAt: "desc" }],
       include: {
         photo: true,
         ...createdByInclude,
@@ -133,7 +133,7 @@ publicationsRouter.post(
     }
 
     const publication = await prisma.publication.create({
-      data: { treeId, content, photoId, createdById: req.user.id },
+      data: { treeId, content, photoId, createdById: req.user.id, lastActivityAt: new Date() },
       include: { photo: true, ...createdByInclude, ...tagsInclude() },
     });
 

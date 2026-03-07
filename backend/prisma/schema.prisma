@@ -68,12 +68,13 @@ model Photo {
 }
 
 model Publication {
-  id          String    @id @default(cuid())
-  treeId      String    @map("tree_id")
-  content     String?   // text / caption
-  photoId     String?   @unique @map("photo_id")
-  createdById String?   @map("created_by_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id              String    @id @default(cuid())
+  treeId          String    @map("tree_id")
+  content         String?   // text / caption
+  photoId         String?   @unique @map("photo_id")
+  createdById     String?   @map("created_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  lastActivityAt  DateTime? @map("last_activity_at")
 
   tree      Tree             @relation(fields: [treeId], references: [id], onDelete: Cascade)
   photo     Photo?            @relation(fields: [photoId], references: [id], onDelete: SetNull)
@@ -83,6 +84,7 @@ model Publication {
 
   @@index([treeId])
   @@index([createdAt])
+  @@index([lastActivityAt])
 }
 
 model Comment {

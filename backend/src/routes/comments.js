@@ -67,6 +67,10 @@ commentsRouter.post(
       },
       include: { author: { select: authorSelect } },
     });
+    await prisma.publication.update({
+      where: { id: publicationId },
+      data: { lastActivityAt: new Date() },
+    });
     return res.status(201).json({ comment: toCommentResponse(comment) });
   }
 );
