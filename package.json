@@ -6,6 +6,6 @@
   "scripts": {
     "build": "cd backend && pnpm install && pnpm exec prisma generate",
     "db:push": "cd backend && pnpm exec prisma db push",
-    "start": "cd backend && pnpm run start"
+    "start": "cd backend && pnpm exec prisma db push && pnpm run start"
   }
 }

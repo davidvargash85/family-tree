@@ -6,7 +6,6 @@
   },
   "deploy": {
     "runtime": "V2",
-    "preDeployCommand": "pnpm run db:push",
     "startCommand": "pnpm run start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
