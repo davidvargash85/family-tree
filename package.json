@@ -4,7 +4,8 @@
   "description": "Monorepo root; Railway builds the backend from backend/",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "build": "cd backend && pnpm install && pnpm exec prisma generate && pnpm exec prisma db push",
+    "build": "cd backend && pnpm install && pnpm exec prisma generate",
+    "db:push": "cd backend && pnpm exec prisma db push",
     "start": "cd backend && pnpm run start"
   }
 }
