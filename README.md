@@ -43,6 +43,20 @@ Frontend runs at `http://localhost:5173` and proxies `/api` and `/uploads` to th
 - **Backend** (`.env`): `DATABASE_URL`, `JWT_SECRET`, optional `PORT`, `FRONTEND_URL`
 - **Frontend**: optional `VITE_API_URL` (defaults to `/api` for proxy)
 
+### Deploy backend to Railway (env vars required)
+
+The backend needs **`DATABASE_URL`** at runtime. Add it in Railway:
+
+1. Open your **project** on [railway.app](https://railway.app) → click the **service** that runs this repo (the one whose deploy logs show `family-tree-app@ start`).
+2. Go to the **Variables** tab (or **Settings** → **Variables**).
+3. Click **+ New variable** or **Add variable**.
+4. **Name:** `DATABASE_URL` (exactly).
+5. **Value:** your Supabase Postgres URL, e.g.  
+   `postgresql://postgres:YOUR_PASSWORD@db.eytuoditlhtekiefvkhq.supabase.co:5432/postgres`
+6. Save and trigger a **new deploy** (Redeploy or push a commit).
+
+Also set **`JWT_SECRET`** (e.g. `openssl rand -base64 32`) and **`FRONTEND_URL`** (your frontend URL) when you deploy the frontend.
+
 ## Features
 
 - **Auth**: Register, login (JWT)

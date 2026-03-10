@@ -6,9 +6,9 @@
   },
   "deploy": {
     "runtime": "V2",
-    "startCommand": "pnpm run start",
+    "startCommand": "sh -c 'cd backend && pnpm exec prisma db push && pnpm run start'",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 30,
+    "healthcheckTimeout": 90,
     "numReplicas": 1,
     "sleepApplication": false,
     "useLegacyStacker": false,
