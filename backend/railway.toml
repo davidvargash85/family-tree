@@ -1,11 +1,23 @@
 # Railway config for backend service.
-# In Railway dashboard: set Root Directory to "backend" so this file is used.
+# In Railway: Settings → Source → set Root Directory to "backend".
+# If your service uses a custom config path, set it to /backend/railway.toml
+# See: https://docs.railway.com/builds/build-configuration
 
 [build]
 builder = "railpack"
-buildCommand = "pnpm install && pnpm exec prisma generate && pnpm exec prisma db push"
+buildCommand = "pnpm install && pnpm exec prisma generate"
+# Only trigger deploys when backend files change (patterns are from repo root)
+# From repo root; only deploy when backend changes (leading slash = from /)
+watchPatterns = ["/backend/**"]
 
 [deploy]
-startCommand = "pnpm run start"
+runtime = "V2"
+startCommand = "sh -c '(pnpm exec prisma db push &) && pnpm run start'"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
+numReplicas = 1
+sleepApplication = false
+useLegacyStacker = false
+ipv6EgressEnabled = false
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
