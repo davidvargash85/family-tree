@@ -1,6 +1,9 @@
+import { createRequire } from "module";
 import { Router } from "express";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
+
+const require = createRequire(import.meta.url);
+const bcrypt = require("bcryptjs");
 import { prisma } from "../db.js";
 import { signToken } from "../middleware/auth.js";
 

@@ -1,4 +1,5 @@
 import { AuthProvider } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
@@ -26,7 +27,8 @@ function PublicOnly({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <SocketProvider>
+        <Routes>
         <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
         <Route path="/invite/:token" element={<InvitePage />} />
@@ -35,7 +37,8 @@ export default function App() {
         <Route path="/tree/:treeId/timeline" element={<ProtectedRoute><TimelinePage /></ProtectedRoute>} />
         <Route path="/tree/:treeId/settings" element={<ProtectedRoute><TreeSettings /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </SocketProvider>
     </AuthProvider>
   );
 }

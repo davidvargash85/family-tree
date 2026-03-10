@@ -1,8 +1,11 @@
+import http from "http";
 import express from "express";
+import { Server as SocketServer } from "socket.io";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { authRouter } from "./routes/auth.js";
+import { setupSocket } from "./socket.js";
 import { treesRouter } from "./routes/trees.js";
 import { membersRouter } from "./routes/members.js";
 import { relationshipsRouter } from "./routes/relationships.js";
@@ -66,4 +69,11 @@ process.on("unhandledRejection", (reason, promise) => {
   log("error", "Unhandled promise rejection", { reason, stack: reason?.stack });
 });
 
-app.listen(PORT, () => log("info", `Server running on http://localhost:${PORT}`));
+const server = http.createServer(app);
+const io = new SocketServer(server, {
+  cors: { origin: process.env.FRONTEND_URL || "http://localhost:5173", credentials: true },
+});
+setupSocket(io);
+app.set("io", io);
+
+server.listen(PORT, () => log("info", `Server running on http://localhost:${PORT}`));

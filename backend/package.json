@@ -10,10 +10,12 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:push:supabase": "dotenv -e .env.supabase -- prisma db push",
     "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "socket.io": "^4.8.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
@@ -23,6 +25,7 @@
     "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
+    "dotenv-cli": "^7.4.2",
     "prisma": "^5.22.0"
   }
 }

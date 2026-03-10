@@ -156,7 +156,10 @@ publicationsRouter.post(
       where: { id: publication.id },
       include: { photo: true, ...createdByInclude, ...tagsInclude() },
     });
-    return res.status(201).json({ publication: toPublicationResponse(updated) });
+    const payload = toPublicationResponse(updated);
+    const io = req.app.get("io");
+    if (io) io.to(`tree:${treeId}`).emit("publication:created", { publication: payload });
+    return res.status(201).json({ publication: payload });
   }
 );
 

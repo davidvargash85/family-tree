@@ -71,6 +71,9 @@ commentsRouter.post(
       where: { id: publicationId },
       data: { lastActivityAt: new Date() },
     });
-    return res.status(201).json({ comment: toCommentResponse(comment) });
+    const payload = toCommentResponse(comment);
+    const io = req.app.get("io");
+    if (io) io.to(`tree:${treeId}`).emit("comment:created", { publicationId, comment: payload });
+    return res.status(201).json({ comment: payload });
   }
 );

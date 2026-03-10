@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { useTreeSocket } from "../context/SocketContext";
 import AddPublicationModal from "../components/AddPublicationModal";
 import ConfirmModal from "../components/ConfirmModal";
 import PublicationComments from "../components/PublicationComments";
@@ -25,6 +26,7 @@ export default function TimelinePage() {
   const { treeId } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  useTreeSocket(treeId);
   const [showAddPublication, setShowAddPublication] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editingId, setEditingId] = useState(null);
