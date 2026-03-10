@@ -19,7 +19,10 @@ export function SocketProvider({ children }) {
     }
     const token = localStorage.getItem("token");
     if (!token) return;
-    const s = io(window.location.origin, { auth: { token } });
+    const socketUrl = import.meta.env.VITE_API_URL
+      ? new URL(import.meta.env.VITE_API_URL).origin
+      : window.location.origin;
+    const s = io(socketUrl, { auth: { token } });
     setSocket(s);
     return () => {
       s.disconnect();
