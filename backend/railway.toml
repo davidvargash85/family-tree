@@ -1,0 +1,11 @@
+# Railway config for backend service.
+# In Railway dashboard: set Root Directory to "backend" so this file is used.
+
+[build]
+builder = "railpack"
+buildCommand = "pnpm install && pnpm exec prisma generate && pnpm exec prisma db push"
+
+[deploy]
+startCommand = "pnpm run start"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
