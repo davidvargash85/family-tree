@@ -62,6 +62,15 @@ In **Variables**, add:
 **3. Watch paths (optional)**  
 Deploys only when `backend/` changes. Configured in `backend/railway.toml` (`watchPatterns`). You can also set watch paths in **Settings** → **Build** if the config file isn’t applied.
 
+**4. Persistent uploads (optional)**  
+By default, uploaded photos are stored on the container filesystem and are lost on redeploy. To keep them:
+
+- In Railway → your backend service, add a **Volume** (e.g. **Command Palette** ⌘K → “Add Volume”, or right‑click the service).
+- Set the **mount path** to **`/app/uploads`** (the app already writes under `uploads/`, which is `/app/uploads` when the app root is `/app`).
+- Redeploy. New uploads will be stored on the volume and persist across deploys.
+
+See [Using Volumes](https://docs.railway.app/guides/volumes). Storage may incur extra cost depending on your plan.
+
 ## Features
 
 - **Auth**: Register, login (JWT)

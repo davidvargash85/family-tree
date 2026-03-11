@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api";
+import { api, resolvePhotoUrl } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useTreeSocket } from "../context/SocketContext";
 import AddPublicationModal from "../components/AddPublicationModal";
@@ -191,7 +191,7 @@ export default function TimelinePage() {
                   {pub.photo && (
                     <div style={styles.cardPhotoWrap}>
                       <img
-                        src={pub.photo.filePath}
+                        src={resolvePhotoUrl(pub.photo.filePath)}
                         alt=""
                         style={styles.cardPhoto}
                       />

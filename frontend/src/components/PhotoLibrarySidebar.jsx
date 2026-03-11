@@ -1,3 +1,5 @@
+import { resolvePhotoUrl } from "../api";
+
 const styles = {
   sidebar: {
     width: 260,
@@ -118,7 +120,7 @@ export default function PhotoLibrarySidebar({ photos, onSelectPhoto, canEdit, on
             }}
             aria-label={p.name ? `View photo: ${p.name}` : "View photo"}
           >
-            <img src={p.url} alt="" style={styles.thumbImg} />
+            <img src={resolvePhotoUrl(p.url)} alt="" style={styles.thumbImg} />
             {p.taggedMembers?.length > 1 && (
               <span style={headerStyles.badge}>{p.taggedMembers.length} people</span>
             )}

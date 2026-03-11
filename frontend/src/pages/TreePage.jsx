@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api";
+import { api, resolvePhotoUrl } from "../api";
 import TreeGraph from "../components/TreeGraph";
 import MemberDetail from "../components/MemberDetail";
 import MemberPopover from "../components/MemberPopover";
@@ -141,7 +141,7 @@ export default function TreePage() {
       .filter((m) => m.photoUrl)
       .map((m) => ({
         source: "member",
-        url: m.photoUrl,
+        url: resolvePhotoUrl(m.photoUrl),
         name: m.name,
         memberId: m.id,
         caption: null,
@@ -150,7 +150,7 @@ export default function TreePage() {
       })),
     ...treePhotos.map((p) => ({
       source: "photo",
-      url: p.filePath,
+      url: resolvePhotoUrl(p.filePath),
       name: p.caption || (p.tags?.length ? `Tagged: ${p.tags.map((t) => t.member?.name).filter(Boolean).join(", ")}` : "Photo"),
       caption: p.caption,
       photoId: p.id,
@@ -276,7 +276,7 @@ export default function TreePage() {
                     >
                       <div style={styles.memberPhoto}>
                         {m.photoUrl ? (
-                          <img src={m.photoUrl} alt="" style={styles.photoImg} />
+                          <img src={resolvePhotoUrl(m.photoUrl)} alt="" style={styles.photoImg} />
                         ) : (
                           <span style={styles.photoPlaceholder}>{m.name.charAt(0)}</span>
                         )}

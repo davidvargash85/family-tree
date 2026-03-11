@@ -2,6 +2,20 @@ import axios from "axios";
 
 const baseURL = import.meta.env.VITE_API_URL || "/api";
 
+/** Resolve relative upload paths to the backend origin so images load in production. */
+export function resolvePhotoUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (!url.startsWith("/")) return url;
+  const origin =
+    baseURL.startsWith("http://") || baseURL.startsWith("https://")
+      ? new URL(baseURL).origin
+      : typeof window !== "undefined"
+        ? window.location.origin
+        : "";
+  return origin ? origin + url : url;
+}
+
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },

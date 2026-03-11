@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { api } from "../api";
+import { api, resolvePhotoUrl } from "../api";
 
 const MIN_SEARCH_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 200;
@@ -322,7 +322,7 @@ export default function PhotoViewerModal({
         <div style={styles.imageWrap}>
           {photo ? (
             <img
-              src={photo.url}
+              src={resolvePhotoUrl(photo.url)}
               alt={photo.name ? `Photo of ${photo.name}` : "Family photo"}
               style={styles.image}
             />

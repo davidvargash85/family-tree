@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { api } from "../api";
+import { api, resolvePhotoUrl } from "../api";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 import ConfirmModal from "./ConfirmModal";
 
@@ -120,7 +120,7 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
 
       <div style={styles.photoWrap}>
         {member.photoUrl ? (
-          <img src={member.photoUrl} alt="" style={styles.photoImg} />
+          <img src={resolvePhotoUrl(member.photoUrl)} alt="" style={styles.photoImg} />
         ) : (
           <span style={styles.photoPlaceholder}>{member.name.charAt(0)}</span>
         )}

@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { Handle, Position } from "reactflow";
 import { Ribbon, Plus, Baby, Heart, Trash2 } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
+import { resolvePhotoUrl } from "../../api";
 import { TreeGraphSelectContext } from "./TreeGraphSelectContext";
 
 const cardBase = {
@@ -137,7 +138,7 @@ export function MemberNode({ data, id: nodeId }) {
         >
           <div style={photoWrap}>
             {photoUrl ? (
-              <img src={photoUrl} alt="" style={photo} />
+              <img src={resolvePhotoUrl(photoUrl)} alt="" style={photo} />
             ) : (
               <span style={placeholder}>{label.charAt(0) || "?"}</span>
             )}

@@ -2,6 +2,7 @@ import { useContext, useCallback, useState } from "react";
 import { Handle, Position } from "reactflow";
 import { Ribbon, Plus, Baby, Heart, Trash2 } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
+import { resolvePhotoUrl } from "../../api";
 import { TreeGraphSelectContext } from "./TreeGraphSelectContext";
 
 const card = {
@@ -133,7 +134,7 @@ function Thumb({ member, onClick, hovered, onHoverChange }) {
   const content = (
     <div style={photoWrap}>
       {photoUrl ? (
-        <img src={photoUrl} alt="" style={photo} />
+        <img src={resolvePhotoUrl(photoUrl)} alt="" style={photo} />
       ) : (
         <span style={placeholder}>{name.charAt(0) || "?"}</span>
       )}
