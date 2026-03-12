@@ -174,11 +174,16 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
   const positionByEntity = {};
   const slotWidth = NODE_WIDTH + NODE_GAP;
 
-  // Seed with saved positions so new nodes can be placed relative to their parent's actual position
+  // Seed with saved positions. For couples, use a member's saved position if the couple id isn't saved
+  // so adding a spouse doesn't move the node.
   if (layoutPositions && typeof layoutPositions === "object") {
     entitiesByLevel.forEach(({ entityIds }) => {
       entityIds.forEach((entityId) => {
-        const saved = layoutPositions[entityId];
+        let saved = layoutPositions[entityId];
+        if (!saved && entityId.startsWith("couple-")) {
+          const memberIds = entityId.slice(7).split("-");
+          saved = layoutPositions[memberIds[0]] ?? layoutPositions[memberIds[1]];
+        }
         if (saved && typeof saved.x === "number" && typeof saved.y === "number") {
           positionByEntity[entityId] = { x: saved.x, y: saved.y };
         }
@@ -252,11 +257,27 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
       }
     }
 
+    // Occupied x-ranges on this level (saved positions) so new nodes don't overlap existing
+    const occupied = entityIds
+      .filter((id) => positionByEntity[id] != null)
+      .map((id) => {
+        const pos = positionByEntity[id];
+        const w = id.startsWith("couple-") ? NODE_WIDTH * 1.8 : NODE_WIDTH;
+        return { left: pos.x, right: pos.x + w };
+      })
+      .sort((a, b) => a.left - b.left);
+
     let rightEdge = -Infinity;
+
     groups.forEach(({ preferredX, preferredY, entityIds: groupIds }) => {
       const n = groupIds.length;
       const totalWidth = (n - 1) * slotWidth + NODE_WIDTH;
       let leftX = preferredX - totalWidth / 2;
+      occupied.forEach((seg) => {
+        if (leftX + totalWidth > seg.left && seg.right > leftX) {
+          leftX = seg.right + NODE_GAP;
+        }
+      });
       if (leftX < rightEdge + NODE_GAP) {
         leftX = rightEdge + NODE_GAP;
       }
@@ -264,6 +285,8 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
         positionByEntity[entityId] = { x: leftX + j * slotWidth, y: preferredY };
       });
       rightEdge = leftX + totalWidth;
+      occupied.push({ left: leftX, right: rightEdge });
+      occupied.sort((a, b) => a.left - b.left);
     });
   });
 
