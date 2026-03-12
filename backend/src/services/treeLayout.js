@@ -1,6 +1,7 @@
 /**
  * Family tree layout: assigns levels (generations) and x,y positions so that
  * parents appear above children and spouse/sibling edges connect at the same level.
+ * Ported from frontend for server-side layout computation.
  */
 
 export const LAYOUT = {
@@ -10,9 +11,6 @@ export const LAYOUT = {
   NODE_GAP: 56,
 };
 
-/**
- * Build parent/child maps from "parent" type relationships (memberA = parent, memberB = child).
- */
 function buildParentMaps(members, parentRels) {
   const parentsMap = {};
   const childrenMap = {};
@@ -23,9 +21,6 @@ function buildParentMaps(members, parentRels) {
   return { parentsMap, childrenMap };
 }
 
-/**
- * Assign level (generation) to each member: 0 = root, 1 = children of roots, etc.
- */
 function assignLevels(members, parentsMap) {
   const levels = {};
   const roots = members.filter((m) => !parentsMap[m.id]?.length);
@@ -47,10 +42,6 @@ function assignLevels(members, parentsMap) {
   return levels;
 }
 
-/**
- * Align levels for spouse/sibling: both members of a spouse or sibling pair
- * get the same level (the deeper one) so they display side-by-side.
- */
 function alignSpouseSiblingLevels(levels, sameLevelRels) {
   const result = { ...levels };
   sameLevelRels.forEach((r) => {
@@ -64,10 +55,6 @@ function alignSpouseSiblingLevels(levels, sameLevelRels) {
   return result;
 }
 
-/**
- * After spouse/sibling alignment, parents may have been moved to a deeper level.
- * Propagate so every member with a parent gets level >= 1 + max(parent levels).
- */
 function propagateDescendantLevels(levels, parentsMap) {
   const result = { ...levels };
   let changed = true;
@@ -87,25 +74,6 @@ function propagateDescendantLevels(levels, parentsMap) {
   return result;
 }
 
-/**
- * Group member ids by level and sort levels.
- */
-function groupByLevel(members, levels) {
-  const levelToIds = {};
-  members.forEach((m) => {
-    const l = levels[m.id];
-    if (!levelToIds[l]) levelToIds[l] = [];
-    levelToIds[l].push(m.id);
-  });
-  return Object.keys(levelToIds)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .map((level) => ({ level, ids: levelToIds[level] }));
-}
-
-/**
- * Build spouse pairs from relationships. Returns Map: memberId -> partnerId (each member at most one partner).
- */
 function buildSpousePairs(spouseRels) {
   const partnerMap = new Map();
   spouseRels.forEach((r) => {
@@ -115,20 +83,13 @@ function buildSpousePairs(spouseRels) {
   return partnerMap;
 }
 
-/**
- * Get consistent couple key (sorted ids) so both members map to same couple.
- */
 function coupleKey(id1, id2) {
   return [id1, id2].sort().join("-");
 }
 
-/**
- * Build entities per level: each entity is either one member (single) or a couple (two members).
- * Returns { entitiesByLevel: [{ level, entityIds: string[] }], memberToNodeId: Map, coupleData: Map }
- */
 function buildEntitiesByLevel(members, levels, partnerMap) {
   const memberById = new Map(members.map((m) => [m.id, m]));
-  const coupleData = new Map(); // coupleKey -> [member1, member2]
+  const coupleData = new Map();
   const processedCouples = new Set();
   const memberToNodeId = new Map();
   const levelToEntityIds = {};
@@ -163,19 +124,11 @@ function buildEntitiesByLevel(members, levels, partnerMap) {
   return { entitiesByLevel, memberToNodeId, coupleData };
 }
 
-/**
- * Compute x,y positions per entity. Children are centered under their parent;
- * siblings are grouped and spaced; overlaps are resolved.
- * If layoutPositions is provided, existing nodes keep their saved position and
- * new nodes are placed below their parent's (saved or computed) position.
- */
 function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId, layoutPositions) {
   const { NODE_WIDTH, NODE_HEIGHT, LEVEL_GAP, NODE_GAP } = LAYOUT;
   const positionByEntity = {};
   const slotWidth = NODE_WIDTH + NODE_GAP;
 
-  // Seed with saved positions. For couples, use a member's saved position if the couple id isn't saved
-  // so adding a spouse doesn't move the node.
   if (layoutPositions && typeof layoutPositions === "object") {
     entitiesByLevel.forEach(({ entityIds }) => {
       entityIds.forEach((entityId) => {
@@ -216,7 +169,6 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
       return { entityId, preferredX, preferredY };
     });
 
-    // Skip entities that already have a position from layoutPositions
     const toPlace = withPreferredX.filter((e) => positionByEntity[e.entityId] == null);
     if (toPlace.length === 0) return;
 
@@ -257,7 +209,6 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
       }
     }
 
-    // Occupied x-ranges on this level (saved positions) so new nodes don't overlap existing
     const occupied = entityIds
       .filter((id) => positionByEntity[id] != null)
       .map((id) => {
@@ -290,7 +241,6 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
     });
   });
 
-  // When we have saved positions, don't shift so we don't move the user's layout
   if (!layoutPositions || Object.keys(layoutPositions).length === 0) {
     const allX = Object.values(positionByEntity).map((p) => p.x);
     const minX = Math.min(0, ...allX);
@@ -302,7 +252,6 @@ function computePositionsForEntities(entitiesByLevel, parentsMap, memberToNodeId
   return positionByEntity;
 }
 
-/** First name only (no last name) for display. */
 function firstName(name) {
   if (!name || typeof name !== "string") return name ?? "";
   return name.trim().split(/\s+/)[0] || name;
@@ -310,9 +259,7 @@ function firstName(name) {
 
 /**
  * Build React Flow nodes and edges from members, relationships, and positions.
- * Couples are merged into one node; edges point to couple node when member is in a couple.
- * layoutPositions: optional { [nodeId]: { x, y } } so saved positions are preserved and
- * new nodes are placed below their parent's actual position.
+ * Returns { nodes, edges } in the shape the frontend expects.
  */
 export function getLayoutedElements(members, relationships, layoutPositions = null) {
   const memberIds = new Set(members.map((m) => m.id));

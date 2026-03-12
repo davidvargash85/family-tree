@@ -66,6 +66,15 @@ export default function TreePage() {
     enabled: !!treeId,
   });
 
+  const { data: layoutData } = useQuery({
+    queryKey: ["treeLayout", treeId],
+    queryFn: async () => {
+      const { data } = await api.get(`/trees/${treeId}/layout`);
+      return data;
+    },
+    enabled: !!treeId && view === "graph",
+  });
+
   const { data: treePhotosData } = useQuery({
     queryKey: ["treePhotos", treeId],
     queryFn: async () => {
@@ -79,6 +88,7 @@ export default function TreePage() {
     mutationFn: ({ body }) => api.post(`/trees/${treeId}/members`, body),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["members", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["treeLayout", treeId] });
       setShowAddMember(false);
       const link = variables?.linkAfterCreate;
       const newMemberId = response?.data?.member?.id;
@@ -100,6 +110,7 @@ export default function TreePage() {
     },
     onSuccess: async () => {
       await queryClient.refetchQueries({ queryKey: ["relationships", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["treeLayout", treeId] });
       setPendingConnection(null);
     },
   });
@@ -109,6 +120,7 @@ export default function TreePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members", treeId] });
       queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["treeLayout", treeId] });
       setDeleteFromCard(null);
       closePopover();
     },
@@ -118,6 +130,7 @@ export default function TreePage() {
     mutationFn: (layoutPositions) => api.patch(`/trees/${treeId}`, { layoutPositions }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tree", treeId] });
+      queryClient.invalidateQueries({ queryKey: ["treeLayout", treeId] });
     },
   });
 
@@ -243,7 +256,7 @@ export default function TreePage() {
               <TreeGraph
                 members={members}
                 relationships={relationships}
-                layoutPositions={tree.layoutPositions ?? undefined}
+                layoutFromApi={layoutData ? { nodes: layoutData.nodes, edges: layoutData.edges } : undefined}
                 onLayoutSave={canEdit ? (positions) => updateLayoutMutation.mutate(positions) : undefined}
                 onNodeClick={handleGraphNodeClick}
                 onConnectionRequest={canEdit ? setPendingConnection : undefined}

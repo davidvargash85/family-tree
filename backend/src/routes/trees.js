@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireTreeAccess, requireOwner } from "../middleware/treeAccess.js";
+import { getLayoutedElements } from "../services/treeLayout.js";
 
 export const treesRouter = Router();
 treesRouter.use(authMiddleware);
@@ -79,6 +80,29 @@ treesRouter.post("/", async (req, res) => {
       createdAt: tree.createdAt,
     },
   });
+});
+
+treesRouter.get("/:id/layout", requireTreeAccess(), async (req, res) => {
+  const treeId = req.params.id;
+  const [tree, members, relationships] = await Promise.all([
+    prisma.tree.findUnique({
+      where: { id: treeId },
+      select: { layoutPositions: true },
+    }),
+    prisma.member.findMany({
+      where: { treeId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true, photoUrl: true, deathDate: true },
+    }),
+    prisma.relationship.findMany({
+      where: { treeId },
+      select: { id: true, memberAId: true, memberBId: true, type: true },
+    }),
+  ]);
+  if (!tree) return res.status(404).json({ error: "Tree not found" });
+  const layoutPositions = tree.layoutPositions && typeof tree.layoutPositions === "object" ? tree.layoutPositions : null;
+  const { nodes, edges } = getLayoutedElements(members, relationships, layoutPositions);
+  return res.json({ nodes, edges });
 });
 
 treesRouter.get("/:id", requireTreeAccess(), async (req, res) => {

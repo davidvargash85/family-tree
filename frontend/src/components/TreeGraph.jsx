@@ -10,7 +10,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import { getLayoutedElements } from "../utils/treeGraphLayout";
 import { nodeTypes } from "./TreeGraph/nodeTypes";
 import { TreeGraphSelectContext } from "./TreeGraph/TreeGraphSelectContext";
 
@@ -38,7 +37,7 @@ function nodeToMemberInfo(node) {
 function TreeGraphInner({
   members,
   relationships,
-  layoutPositions,
+  layoutFromApi,
   onLayoutSave,
   onNodeClick,
   onConnectionRequest,
@@ -46,21 +45,9 @@ function TreeGraphInner({
   onAddSpouse,
   onDelete,
 }) {
-  const { nodes: layoutNodes, edges: initialEdges } = useMemo(
-    () => getLayoutedElements(members, relationships, layoutPositions ?? undefined),
-    [members, relationships, layoutPositions]
-  );
-
-  const initialNodes = useMemo(() => {
-    if (!layoutPositions || Object.keys(layoutPositions).length === 0) return layoutNodes;
-    return layoutNodes.map((node) => {
-      const saved = layoutPositions[node.id];
-      if (saved && typeof saved.x === "number" && typeof saved.y === "number") {
-        return { ...node, position: { x: saved.x, y: saved.y } };
-      }
-      return node;
-    });
-  }, [layoutNodes, layoutPositions]);
+  const layoutNodes = layoutFromApi?.nodes ?? [];
+  const initialEdges = layoutFromApi?.edges ?? [];
+  const initialNodes = useMemo(() => layoutNodes, [layoutNodes]);
 
   const edgesWithMarker = useMemo(
     () =>
@@ -150,6 +137,9 @@ function TreeGraphInner({
 
   if (members.length === 0) {
     return <div style={emptyStateStyle}>Add members to see the tree</div>;
+  }
+  if (layoutFromApi == null && layoutNodes.length === 0) {
+    return <div style={emptyStateStyle}>Loading layout…</div>;
   }
 
   return (
