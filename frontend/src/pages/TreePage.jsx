@@ -85,20 +85,22 @@ export default function TreePage() {
   });
 
   const createMember = useMutation({
-    mutationFn: ({ body }) => api.post(`/trees/${treeId}/members`, body),
+    mutationFn: ({ body, linkAfterCreate }) =>
+      api.post(`/trees/${treeId}/members`, {
+        ...body,
+        ...(linkAfterCreate ? { linkAfterCreate } : {}),
+      }),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["members", treeId] });
-      queryClient.invalidateQueries({ queryKey: ["treeLayout", treeId] });
-      setShowAddMember(false);
-      const link = variables?.linkAfterCreate;
-      const newMemberId = response?.data?.member?.id;
-      if (link && newMemberId) {
-        createRelationship.mutate({
-          memberAId: link.otherMemberId,
-          memberBId: newMemberId,
-          type: link.type,
-        });
+      if (response?.data?.layout) {
+        queryClient.setQueryData(["treeLayout", treeId], response.data.layout);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["treeLayout", treeId] });
       }
+      if (response?.data?.relationship) {
+        queryClient.invalidateQueries({ queryKey: ["relationships", treeId] });
+      }
+      setShowAddMember(false);
       setAddMemberThenLink(null);
     },
   });
