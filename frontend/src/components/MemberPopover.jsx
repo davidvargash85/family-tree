@@ -2,9 +2,10 @@ import { useEffect, useMemo } from "react";
 import { useFloating, autoUpdate, offset, flip, shift } from "@floating-ui/react";
 import { createPortal } from "react-dom";
 import MemberDetail from "./MemberDetail";
+import { zIndex } from "../constants/zIndex";
 
 const popoverWrapStyle = {
-  zIndex: 1000,
+  zIndex: zIndex.popover,
   outline: "none",
 };
 

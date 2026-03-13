@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Modal from "./Modal";
+import DateField from "./DateField";
 
 const schema = z
   .object({
@@ -18,7 +19,7 @@ const schema = z
   });
 
 const formStyles = {
-  form: { display: "flex", flexDirection: "column", gap: 16 },
+  form: { display: "flex", flexDirection: "column", gap: 16, overflow: "visible" },
   field: { display: "flex", flexDirection: "column", gap: 4 },
   label: { fontSize: 14, fontWeight: 500, color: "#374151" },
   input: {
@@ -55,6 +56,7 @@ const defaultValues = { name: "", birthDate: "", deceased: false, deathDate: "",
 export default function AddMemberModal({ open, onClose, onSubmit, isPending, linkContext }) {
   const {
     register,
+    control,
     handleSubmit,
     watch,
     formState: { errors },
@@ -102,82 +104,99 @@ export default function AddMemberModal({ open, onClose, onSubmit, isPending, lin
     : "Add member";
 
   return (
-    <Modal open={open} onClose={handleClose} title={title}>
-      <form onSubmit={handleSubmit(onFormSubmit)} style={formStyles.form}>
-        <div style={formStyles.field}>
-          <label htmlFor="add-member-name" style={formStyles.label}>
-            Name *
-          </label>
-          <input
-            id="add-member-name"
-            {...nameRegisterRest}
-            ref={(el) => {
-              nameRegisterRef(el);
-              nameInputRef.current = el;
-            }}
-            placeholder="Full name"
-            style={{ ...formStyles.input, ...(errors.name ? formStyles.inputError : {}) }}
-          />
-          {errors.name && (
-            <span style={formStyles.error}>{errors.name.message}</span>
-          )}
-        </div>
-        <div style={formStyles.field}>
-          <label htmlFor="add-member-birth" style={formStyles.label}>
-            Birth date
-          </label>
-          <input
-            id="add-member-birth"
-            type="date"
-            {...register("birthDate")}
-            style={formStyles.input}
-          />
-        </div>
-        <div style={{ ...formStyles.field, flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <input
-            id="add-member-deceased"
-            type="checkbox"
-            {...register("deceased")}
-            style={{ width: 18, height: 18 }}
-          />
-          <label htmlFor="add-member-deceased" style={formStyles.label}>
-            Deceased
-          </label>
-        </div>
-        {deceased && (
+    <Modal
+      open={open}
+      onClose={handleClose}
+      title={title}
+      formProps={{ onSubmit: handleSubmit(onFormSubmit), style: formStyles.form, id: "add-member-form" }}
+    >
+      <div style={formStyles.field}>
+        <label htmlFor="add-member-name" style={formStyles.label}>
+          Name *
+        </label>
+        <input
+          id="add-member-name"
+          {...nameRegisterRest}
+          ref={(el) => {
+            nameRegisterRef(el);
+            nameInputRef.current = el;
+          }}
+          placeholder="Full name"
+          style={{ ...formStyles.input, ...(errors.name ? formStyles.inputError : {}) }}
+        />
+        {errors.name && (
+          <span style={formStyles.error}>{errors.name.message}</span>
+        )}
+      </div>
+      <div style={formStyles.field}>
+        <label htmlFor="add-member-bio" style={formStyles.label}>
+          Bio (optional)
+        </label>
+        <textarea
+          id="add-member-bio"
+          {...register("bio")}
+          placeholder="Short bio"
+          rows={3}
+          style={formStyles.input}
+        />
+      </div>
+      <Controller
+        name="birthDate"
+        control={control}
+        render={({ field }) => (
           <div style={formStyles.field}>
-            <label htmlFor="add-member-death" style={formStyles.label}>
-              Death date
-            </label>
-            <input
-              id="add-member-death"
-              type="date"
-              {...register("deathDate")}
-              style={formStyles.input}
+            <DateField
+              id="add-member-birth"
+              label="Birth date"
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="Optional"
+              openUp
             />
           </div>
         )}
-        <div style={formStyles.field}>
-          <label htmlFor="add-member-bio" style={formStyles.label}>
-            Bio (optional)
-          </label>
-          <textarea
-            id="add-member-bio"
-            {...register("bio")}
-            placeholder="Short bio"
-            rows={3}
-            style={formStyles.input}
-          />
-        </div>
-        <div style={formStyles.actions}>
-          <button type="button" onClick={handleClose} style={formStyles.cancelBtn}>
-            Cancel
-          </button>
-          <button type="submit" disabled={isPending} style={formStyles.submitBtn}>
-            {isPending ? "Adding..." : "Add member"}
-          </button>
-        </div>
-      </form>
+      />
+      <div style={{ ...formStyles.field, flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <input
+          id="add-member-deceased"
+          type="checkbox"
+          {...register("deceased")}
+          style={{ width: 18, height: 18 }}
+        />
+        <label htmlFor="add-member-deceased" style={formStyles.label}>
+          Deceased
+        </label>
+      </div>
+      {deceased && (
+        <Controller
+          name="deathDate"
+          control={control}
+          render={({ field }) => (
+            <div style={formStyles.field}>
+              <DateField
+                id="add-member-death"
+                label="Death date"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select date"
+                error={!!errors.deathDate}
+                openUp
+              />
+              {errors.deathDate && (
+                <span style={formStyles.error}>{errors.deathDate.message}</span>
+              )}
+            </div>
+          )}
+        />
+      )}
+      <div style={formStyles.actions}>
+        <button type="button" onClick={handleClose} style={formStyles.cancelBtn}>
+          Cancel
+        </button>
+        <button type="submit" disabled={isPending} style={formStyles.submitBtn}>
+          {isPending ? "Adding..." : "Add member"}
+        </button>
+      </div>
     </Modal>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { zIndex } from "../constants/zIndex";
 
 const modalStyles = {
   overlay: {
@@ -8,8 +9,9 @@ const modalStyles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1100,
+    zIndex: zIndex.modal,
     padding: 24,
+    overflow: "visible",
   },
   dialog: {
     background: "#fff",
@@ -18,9 +20,13 @@ const modalStyles = {
     maxWidth: 420,
     width: "100%",
     maxHeight: "90vh",
-    overflow: "auto",
+    margin: "auto",
+    overflow: "visible",
+    display: "flex",
+    flexDirection: "column",
   },
   header: {
+    flexShrink: 0,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -37,10 +43,20 @@ const modalStyles = {
     lineHeight: 1,
     color: "#6b7280",
   },
-  body: { padding: 20 },
+  bodyScroll: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    padding: 20,
+  },
+  footer: {
+    flexShrink: 0,
+    padding: "0 20px 20px",
+    overflow: "visible",
+  },
 };
 
-export default function Modal({ open, onClose, title, children }) {
+export default function Modal({ open, onClose, title, children, footer, formProps }) {
   useEffect(() => {
     if (!open) return;
     const handleEscape = (e) => e.key === "Escape" && onClose?.();
@@ -54,10 +70,17 @@ export default function Modal({ open, onClose, title, children }) {
 
   if (!open) return null;
 
+  const content = (
+    <>
+      <div style={modalStyles.bodyScroll}>{children}</div>
+      {footer != null && <div style={modalStyles.footer}>{footer}</div>}
+    </>
+  );
+
   return (
     <div
       style={modalStyles.overlay}
-      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
@@ -78,7 +101,7 @@ export default function Modal({ open, onClose, title, children }) {
             )}
           </div>
         )}
-        <div style={modalStyles.body}>{children}</div>
+        {formProps != null ? <form {...formProps}>{content}</form> : content}
       </div>
     </div>
   );

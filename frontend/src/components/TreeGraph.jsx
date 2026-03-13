@@ -45,9 +45,14 @@ function TreeGraphInner({
   onAddSpouse,
   onDelete,
 }) {
-  const layoutNodes = layoutFromApi?.nodes ?? [];
-  const initialEdges = layoutFromApi?.edges ?? [];
-  const initialNodes = useMemo(() => layoutNodes, [layoutNodes]);
+  const initialNodes = useMemo(
+    () => layoutFromApi?.nodes ?? [],
+    [layoutFromApi?.nodes]
+  );
+  const initialEdges = useMemo(
+    () => layoutFromApi?.edges ?? [],
+    [layoutFromApi?.edges]
+  );
 
   const edgesWithMarker = useMemo(
     () =>
@@ -138,7 +143,7 @@ function TreeGraphInner({
   if (members.length === 0) {
     return <div style={emptyStateStyle}>Add members to see the tree</div>;
   }
-  if (layoutFromApi == null && layoutNodes.length === 0) {
+  if (layoutFromApi == null && initialNodes.length === 0) {
     return <div style={emptyStateStyle}>Loading layout…</div>;
   }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api, resolvePhotoUrl } from "../api";
+import { zIndex } from "../constants/zIndex";
 
 const MIN_SEARCH_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 200;
@@ -12,7 +13,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1200,
+    zIndex: zIndex.modalElevated,
     padding: 48,
   },
   container: {

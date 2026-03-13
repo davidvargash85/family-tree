@@ -2,8 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { api, resolvePhotoUrl } from "../api";
+import { zIndex } from "../constants/zIndex";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 import ConfirmModal from "./ConfirmModal";
+import DateField from "./DateField";
 
 function countDescendants(relationships, memberId) {
   const parentRels = (relationships || []).filter((r) => r.type === "parent");
@@ -292,11 +294,20 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
         required
         style={styles.input}
       />
-      <input
-        type="date"
-        value={birthDate}
-        onChange={(e) => setBirthDate(e.target.value)}
+      <textarea
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+        placeholder="Bio"
+        rows={3}
         style={styles.input}
+      />
+      <DateField
+        id="edit-member-birth"
+        label="Birth date"
+        value={birthDate}
+        onChange={setBirthDate}
+        placeholder="Optional"
+        openUp
       />
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
@@ -309,20 +320,15 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
         <label htmlFor="edit-member-deceased" style={{ fontSize: 14 }}>Deceased</label>
       </div>
       {deceased && (
-        <input
-          type="date"
+        <DateField
+          id="edit-member-death"
+          label="Death date"
           value={deathDate}
-          onChange={(e) => setDeathDate(e.target.value)}
-          style={styles.input}
+          onChange={setDeathDate}
+          placeholder="Select date"
+          openUp
         />
       )}
-      <textarea
-        value={bio}
-        onChange={(e) => setBio(e.target.value)}
-        placeholder="Bio"
-        rows={3}
-        style={styles.input}
-      />
       <div style={styles.formActions}>
         <button type="button" onClick={onCancel} style={styles.cancelBtn}>
           Cancel
@@ -563,7 +569,7 @@ const styles = {
   selectedRow: { display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, background: "#f9fafb" },
   selectedName: { flex: 1, fontSize: 14 },
   clearSelectionBtn: { background: "none", border: "none", color: "#2563eb", fontSize: 13, cursor: "pointer" },
-  searchResults: { listStyle: "none", margin: "4px 0 0", padding: 4, border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 200, overflowY: "auto", position: "relative", zIndex: 1 },
+  searchResults: { listStyle: "none", margin: "4px 0 0", padding: 4, border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 200, overflowY: "auto", position: "relative", zIndex: zIndex.dropdown },
   searchResultItem: { display: "block", width: "100%", padding: "8px 12px", textAlign: "left", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14, color: "#374151" },
   searchResultItemMuted: { padding: "8px 12px", fontSize: 14, color: "#9ca3af" },
   muted: { margin: 0, fontSize: 13, color: "#6b7280" },
