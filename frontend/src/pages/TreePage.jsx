@@ -265,6 +265,7 @@ export default function TreePage() {
                 onAddChild={canEdit ? (memberId) => { setAddMemberThenLink({ type: "parent", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
                 onAddSpouse={canEdit ? (memberId) => { setAddMemberThenLink({ type: "spouse", otherMemberId: memberId }); setShowAddMember(true); } : undefined}
                 onDelete={canEdit ? (memberId) => setDeleteFromCard({ memberId, memberName: members.find((m) => m.id === memberId)?.name ?? "" }) : undefined}
+                onAddFirstMember={canEdit ? () => setShowAddMember(true) : undefined}
               />
             </div>
           ) : (

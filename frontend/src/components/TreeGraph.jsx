@@ -12,11 +12,31 @@ import "reactflow/dist/style.css";
 
 import { nodeTypes } from "./TreeGraph/nodeTypes";
 import { TreeGraphSelectContext } from "./TreeGraph/TreeGraphSelectContext";
+import { Button } from "./ui/Button";
 
 const emptyStateStyle = {
   padding: 40,
   textAlign: "center",
   color: "#6b7280",
+};
+
+const emptyStateCardStyle = {
+  padding: "48px 32px",
+  textAlign: "center",
+  maxWidth: 360,
+  margin: "auto",
+};
+const emptyStateHeadlineStyle = {
+  fontSize: "1.25rem",
+  fontWeight: 600,
+  color: "#1e293b",
+  margin: "0 0 8px",
+};
+const emptyStateSublineStyle = {
+  fontSize: "0.9375rem",
+  color: "#64748b",
+  margin: "0 0 24px",
+  lineHeight: 1.45,
 };
 
 const containerStyle = {
@@ -44,6 +64,7 @@ function TreeGraphInner({
   onAddChild,
   onAddSpouse,
   onDelete,
+  onAddFirstMember,
 }) {
   const initialNodes = useMemo(
     () => layoutFromApi?.nodes ?? [],
@@ -141,7 +162,23 @@ function TreeGraphInner({
   );
 
   if (members.length === 0) {
-    return <div style={emptyStateStyle}>Add members to see the tree</div>;
+    return (
+      <div style={{ ...emptyStateStyle, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
+        <div style={emptyStateCardStyle}>
+          <p style={emptyStateHeadlineStyle}>Let’s get your family started</p>
+          <p style={emptyStateSublineStyle}>
+            Every tree begins with one. Add yourself, a parent, or that legendary great-great-great grandparent.
+          </p>
+          {onAddFirstMember ? (
+            <Button variant="primary" onClick={onAddFirstMember}>
+              Add first member
+            </Button>
+          ) : (
+            <p style={emptyStateSublineStyle}>Add members to see the tree.</p>
+          )}
+        </div>
+      </div>
+    );
   }
   if (layoutFromApi == null && initialNodes.length === 0) {
     return <div style={emptyStateStyle}>Loading layout…</div>;
