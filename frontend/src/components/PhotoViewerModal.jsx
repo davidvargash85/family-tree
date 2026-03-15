@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api, resolvePhotoUrl } from "../api";
 import { zIndex } from "../constants/zIndex";
+import { Button } from "./ui";
 
 const MIN_SEARCH_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 200;
@@ -300,24 +301,28 @@ export default function PhotoViewerModal({
       aria-label="Photo viewer"
     >
       <div style={styles.container} onClick={(e) => e.stopPropagation()}>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={onClose}
           style={styles.closeBtn}
           aria-label="Close"
         >
           ×
-        </button>
+        </Button>
 
         {photos.length > 1 && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={goPrev}
             style={{ ...styles.navBtn, ...styles.navBtnLeft }}
             aria-label="Previous photo"
           >
             ‹
-          </button>
+          </Button>
         )}
 
         <div style={styles.imageWrap}>
@@ -333,14 +338,16 @@ export default function PhotoViewerModal({
         </div>
 
         {photos.length > 1 && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={goNext}
             style={{ ...styles.navBtn, ...styles.navBtnRight }}
             aria-label="Next photo"
           >
             ›
-          </button>
+          </Button>
         )}
 
         {photo && (

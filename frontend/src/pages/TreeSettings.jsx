@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { Button } from "../components/ui";
 
 export default function TreeSettings() {
   const { treeId } = useParams();
@@ -85,9 +86,9 @@ export default function TreeSettings() {
               <option value="viewer">Viewer (read only)</option>
               <option value="editor">Editor (can add and edit)</option>
             </select>
-            <button type="submit" disabled={createInvite.isPending} style={styles.button}>
-              {createInvite.isPending ? "Sending..." : "Send invite"}
-            </button>
+            <Button type="submit" variant="primary" disabled={createInvite.isPending} loading={createInvite.isPending} loadingLabel="Sending...">
+              Send invite
+            </Button>
           </form>
         </section>
 
@@ -106,20 +107,12 @@ export default function TreeSettings() {
                     <span style={styles.inviteRole}> · {inv.role}</span>
                   </div>
                   <div style={styles.inviteActions}>
-                    <button
-                      type="button"
-                      onClick={() => copyInviteUrl(inv.inviteUrl)}
-                      style={styles.copyBtn}
-                    >
+                    <Button type="button" variant="ghost" size="sm" onClick={() => copyInviteUrl(inv.inviteUrl)}>
                       Copy link
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteInvite.mutate(inv.id)}
-                      style={styles.revokeBtn}
-                    >
+                    </Button>
+                    <Button type="button" variant="danger" size="sm" onClick={() => deleteInvite.mutate(inv.id)}>
                       Revoke
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -150,11 +143,8 @@ const styles = {
   inviteForm: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" },
   input: { padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, minWidth: 200 },
   select: { padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14 },
-  button: { padding: "10px 20px", background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
   inviteList: { listStyle: "none", margin: 0, padding: 0 },
   inviteItem: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #eee" },
   inviteRole: { color: "#6b7280", fontSize: 14 },
   inviteActions: { display: "flex", gap: 8 },
-  copyBtn: { padding: "6px 12px", background: "#f3f4f6", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13 },
-  revokeBtn: { padding: "6px 12px", background: "none", border: "none", color: "#b91c1c", cursor: "pointer", fontSize: 13 },
 };

@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import Modal from "./Modal";
+import { Button } from "./ui";
 
 const styles = {
   form: { display: "flex", flexDirection: "column", gap: 16 },
@@ -13,24 +14,6 @@ const styles = {
   },
   fileInput: { fontSize: 14 },
   actions: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 },
-  cancelBtn: {
-    padding: "8px 16px",
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  submitBtn: {
-    padding: "8px 16px",
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
   error: { fontSize: 12, color: "#dc2626" },
 };
 
@@ -83,12 +66,12 @@ export default function AddPhotoModal({ open, onClose, onSubmit, isPending, tree
           />
         </div>
         <div style={styles.actions}>
-          <button type="button" onClick={onClose} style={styles.cancelBtn}>
+          <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button type="submit" style={styles.submitBtn} disabled={isPending}>
-            {isPending ? "Uploading…" : "Upload"}
-          </button>
+          </Button>
+          <Button type="submit" variant="primary" disabled={isPending} loading={isPending} loadingLabel="Uploading…">
+            Upload
+          </Button>
         </div>
       </form>
     </Modal>

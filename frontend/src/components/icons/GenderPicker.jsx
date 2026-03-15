@@ -1,4 +1,5 @@
 import { GenderIcon } from "./GenderIcon.jsx";
+import { Button } from "../ui";
 
 const pickerStyles = {
   wrap: { display: "flex", gap: 8, alignItems: "center" },
@@ -13,7 +14,6 @@ const pickerStyles = {
     borderColor: "#e5e7eb",
     borderRadius: 8,
     backgroundColor: "#fff",
-    cursor: "pointer",
     color: "#6b7280",
   },
   optionSelected: {
@@ -42,8 +42,10 @@ export function GenderPicker({ value, onChange, iconSize = 22, id, "aria-label":
       aria-label={ariaLabel ?? "Gender"}
       style={pickerStyles.wrap}
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         title="Male (click again to clear)"
         aria-label={value === "male" ? "Male, selected. Click to clear" : "Male"}
         aria-pressed={value === "male"}
@@ -54,9 +56,11 @@ export function GenderPicker({ value, onChange, iconSize = 22, id, "aria-label":
         onClick={() => handleClick("male")}
       >
         <GenderIcon variant="male" size={iconSize} />
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         title="Female (click again to clear)"
         aria-label={value === "female" ? "Female, selected. Click to clear" : "Female"}
         aria-pressed={value === "female"}
@@ -67,7 +71,7 @@ export function GenderPicker({ value, onChange, iconSize = 22, id, "aria-label":
         onClick={() => handleClick("female")}
       >
         <GenderIcon variant="female" size={iconSize} />
-      </button>
+      </Button>
     </div>
   );
 }

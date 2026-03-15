@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, resolvePhotoUrl } from "../api";
 import TreeGraph from "../components/TreeGraph";
+import { Button } from "../components/ui";
 import MemberDetail from "../components/MemberDetail";
 import MemberPopover from "../components/MemberPopover";
 import AddMemberModal from "../components/AddMemberModal";
@@ -211,29 +212,29 @@ export default function TreePage() {
 
       <div style={styles.toolbar}>
         <div style={styles.viewToggle}>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="md"
             onClick={() => setView("list")}
-            style={{ ...styles.toggleBtn, borderRadius: "6px 0 0 6px", ...(view === "list" ? styles.toggleBtnActive : {}) }}
+            style={{ borderRadius: "6px 0 0 6px", ...(view === "list" ? styles.toggleBtnActive : {}) }}
           >
             List
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="md"
             onClick={() => setView("graph")}
-            style={{ ...styles.toggleBtn, borderRadius: "0 6px 6px 0", marginLeft: -1, ...(view === "graph" ? styles.toggleBtnActive : {}) }}
+            style={{ borderRadius: "0 6px 6px 0", marginLeft: -1, ...(view === "graph" ? styles.toggleBtnActive : {}) }}
           >
             Tree
-          </button>
+          </Button>
         </div>
         {canEdit && (
-          <button
-            type="button"
-            onClick={() => setShowAddMember(true)}
-            style={styles.addMemberBtn}
-          >
+          <Button type="button" variant="primary" onClick={() => setShowAddMember(true)}>
             + Add member
-          </button>
+          </Button>
         )}
       </div>
 
@@ -442,9 +443,7 @@ const styles = {
     boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
   },
   viewToggle: { display: "flex", gap: 0 },
-  toggleBtn: { padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff" },
   toggleBtnActive: { background: "#1e3a5f", color: "#fff", borderColor: "#1e3a5f" },
-  addMemberBtn: { padding: "8px 16px", background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
   viewArea: {
     gridColumn: "1 / -1",
     minHeight: 0,

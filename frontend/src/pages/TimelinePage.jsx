@@ -7,6 +7,7 @@ import { useTreeSocket } from "../context/SocketContext";
 import AddPublicationModal from "../components/AddPublicationModal";
 import ConfirmModal from "../components/ConfirmModal";
 import PublicationComments from "../components/PublicationComments";
+import { Button } from "../components/ui";
 
 const formatDate = (dateStr) => {
   const d = new Date(dateStr);
@@ -129,13 +130,14 @@ export default function TimelinePage() {
         <div style={styles.feed}>
           {canEdit && (
             <section style={styles.composerCard}>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 style={styles.composerTrigger}
                 onClick={() => setShowAddPublication(true)}
               >
                 What would you like to share?
-              </button>
+              </Button>
             </section>
           )}
 
@@ -166,25 +168,29 @@ export default function TimelinePage() {
                     </span>
                     {isCreator && !isEditing && (
                       <span style={styles.cardActions}>
-                        <button
+                        <Button
                           type="button"
-                          style={styles.editBtn}
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             setEditingId(pub.id);
                             setEditContent(pub.content ?? "");
                           }}
                           aria-label="Edit post"
+                          style={styles.editBtn}
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
-                          style={styles.deleteBtn}
+                          variant="danger"
+                          size="sm"
                           onClick={() => setDeleteTarget({ id: pub.id })}
                           aria-label="Delete post"
+                          style={styles.deleteBtn}
                         >
                           Delete
-                        </button>
+                        </Button>
                       </span>
                     )}
                   </div>
@@ -208,19 +214,19 @@ export default function TimelinePage() {
                         autoFocus
                       />
                       <div style={styles.editActions}>
-                        <button
+                        <Button
                           type="button"
-                          style={styles.cancelEditBtn}
+                          variant="ghost"
                           onClick={() => {
                             setEditingId(null);
                             setEditContent("");
                           }}
                         >
                           Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
-                          style={styles.saveEditBtn}
+                          variant="primary"
                           onClick={() =>
                             updatePublication.mutate({
                               id: pub.id,
@@ -228,9 +234,11 @@ export default function TimelinePage() {
                             })
                           }
                           disabled={updatePublication.isPending}
+                          loading={updatePublication.isPending}
+                          loadingLabel="Saving…"
                         >
-                          {updatePublication.isPending ? "Saving…" : "Save"}
-                        </button>
+                          Save
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -355,22 +363,8 @@ const styles = {
   cardTime: { fontSize: 13, color: "#6b7280" },
   creatorName: { color: "#9ca3af", fontWeight: 400 },
   cardActions: { display: "flex", gap: 8 },
-  editBtn: {
-    background: "none",
-    border: "none",
-    color: "#2563eb",
-    fontSize: 13,
-    cursor: "pointer",
-    padding: "2px 6px",
-  },
-  deleteBtn: {
-    background: "none",
-    border: "none",
-    color: "#dc2626",
-    fontSize: 13,
-    cursor: "pointer",
-    padding: "2px 6px",
-  },
+  editBtn: { background: "none", color: "#2563eb", fontSize: 13, padding: "2px 6px" },
+  deleteBtn: { background: "none", fontSize: 13, padding: "2px 6px" },
   editForm: { padding: 16 },
   editTextarea: {
     width: "100%",
@@ -383,24 +377,6 @@ const styles = {
     boxSizing: "border-box",
   },
   editActions: { display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" },
-  cancelEditBtn: {
-    padding: "8px 16px",
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  saveEditBtn: {
-    padding: "8px 16px",
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
   cardPhotoWrap: { background: "#000" },
   cardPhoto: {
     width: "100%",

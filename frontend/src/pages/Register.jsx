@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -66,9 +67,9 @@ export default function Register() {
             style={styles.input}
             autoComplete="new-password"
           />
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "Creating account..." : "Register"}
-          </button>
+          <Button type="submit" variant="primary" disabled={loading} loading={loading} loadingLabel="Creating account...">
+            Register
+          </Button>
         </form>
         <p style={styles.footer}>
           Already have an account? <Link to="/login">Sign in</Link>
@@ -103,14 +104,6 @@ const styles = {
     border: "1px solid #d1d5db",
     borderRadius: 8,
     fontSize: 16,
-  },
-  button: {
-    padding: 12,
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    fontWeight: 600,
   },
   footer: { marginTop: 20, textAlign: "center", fontSize: 14, color: "#666" },
 };

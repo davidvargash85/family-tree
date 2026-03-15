@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { Button } from "./ui";
 
 const formatCommentDate = (dateStr) => {
   const d = new Date(dateStr);
@@ -102,9 +103,9 @@ function CommentItem({ node, replyingToId, replyDraft, onReplyDraftChange, onSta
       </div>
       <p style={styles.content}>{node.content}</p>
       {!isReply && onStartReply && (
-        <button type="button" style={styles.replyBtn} onClick={() => onStartReply(node.id)}>
+        <Button type="button" variant="ghost" size="sm" onClick={() => onStartReply(node.id)} style={styles.replyBtn}>
           Reply
-        </button>
+        </Button>
       )}
       {isReplying && (
         <div style={styles.form}>
@@ -123,17 +124,19 @@ function CommentItem({ node, replyingToId, replyDraft, onReplyDraftChange, onSta
             style={styles.input}
           />
           <div style={styles.submitRow}>
-            <button type="button" style={{ ...styles.submitBtn, background: "#f3f4f6", color: "#374151" }} onClick={onCancelReply}>
+            <Button type="button" variant="ghost" onClick={onCancelReply}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              style={styles.submitBtn}
+              variant="primary"
               onClick={handleSubmitReply}
               disabled={!draft.trim() || isPending}
+              loading={isPending}
+              loadingLabel="Sending…"
             >
-              {isPending ? "Sending…" : "Reply"}
-            </button>
+              Reply
+            </Button>
           </div>
         </div>
       )}
@@ -232,14 +235,16 @@ export default function PublicationComments({ treeId, publicationId }) {
               style={styles.input}
             />
             <div style={styles.submitRow}>
-              <button
+              <Button
                 type="button"
-                style={styles.submitBtn}
+                variant="primary"
                 onClick={handleSubmitTopLevel}
                 disabled={!newCommentText.trim() || createComment.isPending}
+                loading={createComment.isPending}
+                loadingLabel="Sending…"
               >
-                {createComment.isPending ? "Sending…" : "Comment"}
-              </button>
+                Comment
+              </Button>
             </div>
           </div>
         </>

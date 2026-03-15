@@ -2,7 +2,7 @@
  * Shared Button component.
  *
  * Features:
- * - Variants: primary, secondary, ghost
+ * - Variants: primary, secondary, ghost, danger
  * - States: default, disabled (grayed), loading
  * - Optional leftIcon / rightIcon (React nodes, e.g. SVG or icon component)
  * - Sizes: sm, md, lg
@@ -10,6 +10,7 @@
  * @example
  * <Button variant="primary" type="submit">Save</Button>
  * <Button variant="secondary" leftIcon={<Icon />} onClick={handleClick}>With icon</Button>
+ * <Button variant="danger" onClick={handleDelete}>Delete</Button>
  * <Button disabled>Can't click</Button>
  * <Button loading loadingLabel="Saving…">Submit</Button>
  */
@@ -17,7 +18,7 @@
 const variantStyles = {
   primary: {
     default: {
-      background: "#2563eb",
+      background: "#1e3a5f",
       color: "#fff",
       border: "none",
     },
@@ -41,14 +42,25 @@ const variantStyles = {
   },
   ghost: {
     default: {
-      background: "transparent",
-      color: "#334155",
-      border: "1px solid #cbd5e1",
+      background: "#f3f4f6",
+      color: "#374151",
+      border: "none",
     },
     disabled: {
       background: "#f1f5f9",
       color: "#94a3b8",
-      borderColor: "#e2e8f0",
+      cursor: "not-allowed",
+    },
+  },
+  danger: {
+    default: {
+      background: "#b91c1c",
+      color: "#fff",
+      border: "none",
+    },
+    disabled: {
+      background: "#94a3b8",
+      color: "#e2e8f0",
       cursor: "not-allowed",
     },
   },

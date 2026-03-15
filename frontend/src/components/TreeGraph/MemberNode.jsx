@@ -4,6 +4,7 @@ import { Ribbon, Plus, Baby, Heart, Trash2 } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
 import { resolvePhotoUrl } from "../../api";
 import { TreeGraphSelectContext } from "./TreeGraphSelectContext";
+import { Button } from "../ui";
 
 const cardBase = {
   padding: 10,
@@ -153,8 +154,10 @@ export function MemberNode({ data, id: nodeId }) {
         {showActions && (
           <div style={hovered ? actionsColumnVisible : actionsColumn}>
             {onAddChild && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 style={hoveredAction === "child" ? actionBtnHover : actionBtn}
                 onClick={(e) => { e.stopPropagation(); onAddChild(nodeId); }}
                 onMouseEnter={() => setHoveredAction("child")}
@@ -164,11 +167,13 @@ export function MemberNode({ data, id: nodeId }) {
               >
                 <Plus size={12} strokeWidth={2.5} />
                 <Baby size={14} style={{ marginLeft: 1 }} />
-              </button>
+              </Button>
             )}
             {onAddSpouse && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 style={hoveredAction === "spouse" ? actionBtnHover : actionBtn}
                 onClick={(e) => { e.stopPropagation(); onAddSpouse(nodeId); }}
                 onMouseEnter={() => setHoveredAction("spouse")}
@@ -178,11 +183,13 @@ export function MemberNode({ data, id: nodeId }) {
               >
                 <Plus size={12} strokeWidth={2.5} />
                 <Heart size={14} style={{ marginLeft: 1 }} />
-              </button>
+              </Button>
             )}
             {onDelete && (
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 style={hoveredAction === "delete" ? actionBtnDangerHover : actionBtn}
                 onClick={(e) => { e.stopPropagation(); onDelete(nodeId); }}
                 onMouseEnter={() => setHoveredAction("delete")}
@@ -191,7 +198,7 @@ export function MemberNode({ data, id: nodeId }) {
                 aria-label="Delete"
               >
                 <Trash2 size={16} />
-              </button>
+              </Button>
             )}
           </div>
         )}

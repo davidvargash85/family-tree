@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Modal from "./Modal";
+import { Button } from "./ui";
 
 const RELATIONSHIP_TYPES = [
   { value: "parent", label: "Parent–child" },
@@ -20,24 +21,6 @@ const styles = {
   radioGroup: { display: "flex", flexDirection: "column", gap: 8 },
   radioRow: { display: "flex", alignItems: "center", gap: 8 },
   actions: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 },
-  cancelBtn: {
-    padding: "8px 16px",
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  confirmBtn: {
-    padding: "8px 16px",
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
 };
 
 export default function RelationshipTypeModal({
@@ -121,17 +104,19 @@ export default function RelationshipTypeModal({
           </div>
         )}
         <div style={styles.actions}>
-          <button type="button" onClick={onCancel} style={styles.cancelBtn}>
+          <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
             onClick={handleConfirm}
             disabled={isPending}
-            style={styles.confirmBtn}
+            loading={isPending}
+            loadingLabel="Adding..."
           >
-            {isPending ? "Adding..." : "Add relationship"}
-          </button>
+            Add relationship
+          </Button>
         </div>
       </div>
     </Modal>

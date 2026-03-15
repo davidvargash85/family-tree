@@ -4,6 +4,7 @@ import { Ribbon, Plus, Baby, Heart, Trash2 } from "lucide-react";
 import { isAliveSentinel } from "../../utils/memberDates";
 import { resolvePhotoUrl } from "../../api";
 import { TreeGraphSelectContext } from "./TreeGraphSelectContext";
+import { Button } from "../ui";
 
 const card = {
   padding: 10,
@@ -218,8 +219,10 @@ export function CoupleNode({ data }) {
         {showActions && (
           <div style={hovered ? actionsColumnVisible : actionsColumn}>
             {onAddChild && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 style={hoveredAction === "child" ? actionBtnHover : actionBtn}
                 onClick={(e) => { e.stopPropagation(); onAddChild(primaryMemberId); }}
                 onMouseEnter={() => setHoveredAction("child")}
@@ -229,11 +232,13 @@ export function CoupleNode({ data }) {
               >
                 <Plus size={12} strokeWidth={2.5} />
                 <Baby size={14} style={{ marginLeft: 1 }} />
-              </button>
+              </Button>
             )}
             {onAddSpouse && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 style={hoveredAction === "spouse" ? actionBtnHover : actionBtn}
                 onClick={(e) => { e.stopPropagation(); onAddSpouse(primaryMemberId); }}
                 onMouseEnter={() => setHoveredAction("spouse")}
@@ -243,11 +248,13 @@ export function CoupleNode({ data }) {
               >
                 <Plus size={12} strokeWidth={2.5} />
                 <Heart size={14} style={{ marginLeft: 1 }} />
-              </button>
+              </Button>
             )}
             {onDelete && (
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 style={hoveredAction === "delete" ? actionBtnDangerHover : actionBtn}
                 onClick={(e) => { e.stopPropagation(); onDelete(primaryMemberId); }}
                 onMouseEnter={() => setHoveredAction("delete")}
@@ -256,7 +263,7 @@ export function CoupleNode({ data }) {
                 aria-label="Delete"
               >
                 <Trash2 size={16} />
-              </button>
+              </Button>
             )}
           </div>
         )}

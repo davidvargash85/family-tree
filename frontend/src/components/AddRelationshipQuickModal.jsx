@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Modal from "./Modal";
+import { Button } from "./ui";
 
 const styles = {
   form: { display: "flex", flexDirection: "column", gap: 16 },
@@ -12,24 +13,6 @@ const styles = {
     fontSize: 14,
   },
   actions: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 },
-  cancelBtn: {
-    padding: "8px 16px",
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  confirmBtn: {
-    padding: "8px 16px",
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
 };
 
 export default function AddRelationshipQuickModal({
@@ -86,12 +69,12 @@ export default function AddRelationshipQuickModal({
           </select>
         </div>
         <div style={styles.actions}>
-          <button type="button" onClick={onCancel} style={styles.cancelBtn}>
+          <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
-          <button type="submit" disabled={isPending || !otherId} style={styles.confirmBtn}>
-            {isPending ? "Adding..." : "Add"}
-          </button>
+          </Button>
+          <Button type="submit" variant="primary" disabled={isPending || !otherId} loading={isPending} loadingLabel="Adding...">
+            Add
+          </Button>
         </div>
       </form>
     </Modal>

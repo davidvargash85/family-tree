@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -53,9 +54,9 @@ export default function Login() {
             style={styles.input}
             autoComplete="current-password"
           />
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
+          <Button type="submit" variant="primary" disabled={loading} loading={loading} loadingLabel="Signing in...">
+            Sign in
+          </Button>
         </form>
         <p style={styles.footer}>
           Don&apos;t have an account? <Link to="/register">Register</Link>
@@ -90,14 +91,6 @@ const styles = {
     border: "1px solid #d1d5db",
     borderRadius: 8,
     fontSize: 16,
-  },
-  button: {
-    padding: 12,
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    fontWeight: 600,
   },
   footer: { marginTop: 20, textAlign: "center", fontSize: 14, color: "#666" },
 };

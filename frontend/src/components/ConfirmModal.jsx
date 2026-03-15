@@ -1,31 +1,9 @@
 import Modal from "./Modal";
+import { Button } from "./ui";
 
 const styles = {
   message: { margin: "0 0 20px", fontSize: 14, color: "#374151", lineHeight: 1.5 },
   actions: { display: "flex", gap: 8, justifyContent: "flex-end" },
-  cancelBtn: {
-    padding: "8px 16px",
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  confirmBtn: {
-    padding: "8px 16px",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
-  confirmBtnDanger: {
-    background: "#b91c1c",
-  },
-  confirmBtnDefault: {
-    background: "#1e3a5f",
-  },
 };
 
 export default function ConfirmModal({
@@ -42,20 +20,19 @@ export default function ConfirmModal({
     <Modal open={open} onClose={onCancel} title={title}>
       <p style={styles.message}>{message}</p>
       <div style={styles.actions}>
-        <button type="button" onClick={onCancel} style={styles.cancelBtn} disabled={isPending}>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant={danger ? "danger" : "primary"}
           onClick={onConfirm}
           disabled={isPending}
-          style={{
-            ...styles.confirmBtn,
-            ...(danger ? styles.confirmBtnDanger : styles.confirmBtnDefault),
-          }}
+          loading={isPending}
+          loadingLabel={confirmLabel}
         >
-          {isPending ? "..." : confirmLabel}
-        </button>
+          {confirmLabel}
+        </Button>
       </div>
     </Modal>
   );

@@ -1,4 +1,5 @@
 import { resolvePhotoUrl } from "../api";
+import { Button } from "./ui";
 
 const styles = {
   sidebar: {
@@ -54,16 +55,6 @@ const styles = {
 const headerStyles = {
   header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 },
   title: { margin: 0, fontSize: 15, fontWeight: 600, color: "#1e3a5f" },
-  addBtn: {
-    padding: "6px 10px",
-    fontSize: 12,
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
   badge: {
     position: "absolute",
     bottom: 4,
@@ -83,9 +74,9 @@ export default function PhotoLibrarySidebar({ photos, onSelectPhoto, canEdit, on
         <div style={headerStyles.header}>
           <h2 style={headerStyles.title}>Photos</h2>
           {canEdit && onAddPhoto && (
-            <button type="button" onClick={onAddPhoto} style={headerStyles.addBtn}>
+            <Button type="button" variant="primary" size="sm" onClick={onAddPhoto}>
               Add photo
-            </button>
+            </Button>
           )}
         </div>
         <p style={styles.empty}>No photos yet. Add member photos or upload a photo to see them here.</p>
@@ -98,9 +89,9 @@ export default function PhotoLibrarySidebar({ photos, onSelectPhoto, canEdit, on
       <div style={headerStyles.header}>
         <h2 style={headerStyles.title}>Photos</h2>
         {canEdit && onAddPhoto && (
-          <button type="button" onClick={onAddPhoto} style={headerStyles.addBtn}>
+          <Button type="button" variant="primary" size="sm" onClick={onAddPhoto}>
             Add photo
-          </button>
+          </Button>
         )}
       </div>
       <div style={styles.grid}>

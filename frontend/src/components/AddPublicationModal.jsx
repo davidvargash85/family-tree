@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import Modal from "./Modal";
+import { Button } from "./ui";
 
 const styles = {
   form: { display: "flex", flexDirection: "column", gap: 16 },
@@ -46,24 +47,6 @@ const styles = {
   },
   memberOptionSelected: { background: "#e0e7ff" },
   actions: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 },
-  cancelBtn: {
-    padding: "8px 16px",
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  submitBtn: {
-    padding: "8px 16px",
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
   error: { fontSize: 12, color: "#dc2626" },
   preview: { maxWidth: "100%", maxHeight: 200, borderRadius: 8, objectFit: "contain" },
 };
@@ -193,12 +176,12 @@ export default function AddPublicationModal({
           )}
         </div>
         <div style={styles.actions}>
-          <button type="button" onClick={handleClose} style={styles.cancelBtn}>
+          <Button type="button" variant="ghost" onClick={handleClose}>
             Cancel
-          </button>
-          <button type="submit" style={styles.submitBtn} disabled={isPending}>
-            {isPending ? "Posting…" : "Post"}
-          </button>
+          </Button>
+          <Button type="submit" variant="primary" disabled={isPending} loading={isPending} loadingLabel="Posting…">
+            Post
+          </Button>
         </div>
       </form>
     </Modal>

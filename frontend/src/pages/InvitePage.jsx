@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui";
 
 export default function InvitePage() {
   const { token } = useParams();
@@ -56,9 +57,9 @@ export default function InvitePage() {
                 <Link to={`/login?redirect=/invite/${token}`}>Sign in</Link> or <Link to={`/register?redirect=/invite/${token}`}>create an account</Link> to accept.
               </p>
             ) : (
-              <button type="button" onClick={handleAccept} disabled={accepting} style={styles.button}>
-                {accepting ? "Accepting..." : "Accept invitation"}
-              </button>
+              <Button type="button" variant="primary" onClick={handleAccept} disabled={accepting} loading={accepting} loadingLabel="Accepting...">
+                Accept invitation
+              </Button>
             )}
           </>
         )}
@@ -74,6 +75,5 @@ const styles = {
   title: { margin: "0 0 16px", fontSize: 22 },
   text: { margin: "0 0 16px", color: "#374151" },
   error: { color: "#b91c1c", marginBottom: 16 },
-  button: { padding: "12px 24px", background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" },
   footer: { marginTop: 24, fontSize: 14 },
 };

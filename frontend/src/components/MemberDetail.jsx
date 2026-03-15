@@ -6,6 +6,7 @@ import { GenderIcon, GenderPicker } from "./icons";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 import ConfirmModal from "./ConfirmModal";
 import DateField from "./DateField";
+import { Button } from "./ui";
 
 function countDescendants(relationships, memberId) {
   const parentRels = (relationships || []).filter((r) => r.type === "parent");
@@ -31,7 +32,6 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [hoveredRemoveRelId, setHoveredRemoveRelId] = useState(null);
-  const [hoveredDeleteBtn, setHoveredDeleteBtn] = useState(false);
 
   const { data: member, isLoading } = useQuery({
     queryKey: ["member", treeId, memberId],
@@ -107,7 +107,7 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
 
   return (
     <aside style={panelStyle}>
-      <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close">×</button>
+      <Button type="button" variant="ghost" size="sm" onClick={onClose} style={styles.closeBtn} aria-label="Close">×</Button>
 
       <div style={styles.photoWrap}>
         {member.photoUrl ? (
@@ -135,9 +135,9 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
               Upload
             </label>
             {member.photoUrl && (
-              <button type="button" onClick={() => deletePhoto.mutate()} style={styles.removePhotoBtn}>
+              <Button type="button" variant="danger" size="sm" onClick={() => deletePhoto.mutate()}>
                 Remove
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -172,20 +172,20 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
           {member.bio && <p style={styles.bio}>{member.bio}</p>}
           {canEdit && (
             <div style={styles.editDeleteRow}>
-              <button type="button" onClick={() => setEditing(true)} style={styles.editBtn}>
+              <Button type="button" variant="ghost" onClick={() => setEditing(true)} style={{ flex: 1 }}>
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 onClick={() => (onRequestDelete ? onRequestDelete(memberId) : setShowDeleteConfirm(true))}
-                onMouseEnter={() => setHoveredDeleteBtn(true)}
-                onMouseLeave={() => setHoveredDeleteBtn(false)}
-                style={hoveredDeleteBtn ? styles.deleteBtnIconDanger : styles.deleteBtnIcon}
                 title="Delete"
                 aria-label="Delete"
+                style={{ flex: 1, minWidth: 0 }}
               >
                 <Trash2 size={16} />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -229,17 +229,17 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
                     <span>{other.name}</span>
                     <span style={styles.relType}>{displayType}</span>
                     {canEdit && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => deleteRelationship.mutate(r.id)}
-                        onMouseEnter={() => setHoveredRemoveRelId(r.id)}
-                        onMouseLeave={() => setHoveredRemoveRelId(null)}
-                        style={hoveredRemoveRelId === r.id ? styles.relRemoveBtnDanger : styles.relRemoveBtn}
                         title="Remove relationship"
                         aria-label="Remove relationship"
+                        style={styles.relRemoveBtn}
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </Button>
                     )}
                   </li>
                 );
@@ -331,12 +331,12 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
         />
       )}
       <div style={styles.formActions}>
-        <button type="button" onClick={onCancel} style={styles.cancelBtn}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
-        </button>
-        <button type="submit" disabled={saving} style={styles.saveBtn}>
-          {saving ? "Saving..." : "Save"}
-        </button>
+        </Button>
+        <Button type="submit" variant="primary" disabled={saving} loading={saving} loadingLabel="Saving...">
+          Save
+        </Button>
       </div>
     </form>
   );

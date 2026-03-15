@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { zIndex } from "../constants/zIndex";
+import { Button } from "./ui";
 
 const modalStyles = {
   overlay: {
@@ -36,9 +37,8 @@ const modalStyles = {
   title: { margin: 0, fontSize: 18, fontWeight: 600 },
   closeBtn: {
     background: "none",
-    border: "none",
+    minWidth: 0,
     padding: 4,
-    cursor: "pointer",
     fontSize: 20,
     lineHeight: 1,
     color: "#6b7280",
@@ -90,14 +90,16 @@ export default function Modal({ open, onClose, title, children, footer, formProp
           <div style={modalStyles.header}>
             {title && <h2 id="modal-title" style={modalStyles.title}>{title}</h2>}
             {onClose && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={onClose}
                 style={modalStyles.closeBtn}
                 aria-label="Close"
               >
                 ×
-              </button>
+              </Button>
             )}
           </div>
         )}
