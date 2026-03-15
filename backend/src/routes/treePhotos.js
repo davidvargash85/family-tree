@@ -1,17 +1,9 @@
 import { Router } from "express";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 import multer from "multer";
 import { prisma } from "../db.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireTreeAccess, requireEditor } from "../middleware/treeAccess.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, "..", "..", "uploads", "trees");
-try {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-} catch (_) {}
+import { processAndSave, deletePhotoFiles } from "../services/imageStorage.js";
 
 const memoryUpload = multer({
   storage: multer.memoryStorage(),
@@ -81,29 +73,27 @@ treePhotosRouter.post(
     }
     const treeId = req.params.treeId;
     const caption = typeof req.body.caption === "string" ? req.body.caption.trim() || null : null;
-    const ext = path.extname(req.file.originalname)?.toLowerCase() || ".jpg";
-    const safeExt = /\.(jpe?g|png|gif|webp)$/.test(ext) ? ext : ".jpg";
     const created = await prisma.photo.create({
       data: { treeId, filePath: "/temp", caption },
       include: tagsInclude(),
     });
     const id = created.id;
-    const filename = `photo${safeExt}`;
-    const relativePath = `/uploads/trees/${treeId}/photos/${id}/${filename}`;
-    const dir = path.join(uploadsDir, treeId, "photos", id);
     try {
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(path.join(dir, filename), req.file.buffer);
+      const { filePath } = await processAndSave(req.file.buffer, {
+        treeId,
+        id,
+        type: "photo",
+      });
+      const photo = await prisma.photo.update({
+        where: { id },
+        data: { filePath },
+        include: tagsInclude(),
+      });
+      return res.status(201).json({ photo: toPhotoResponse(photo) });
     } catch (err) {
       await prisma.photo.delete({ where: { id } });
       throw err;
     }
-    const photo = await prisma.photo.update({
-      where: { id },
-      data: { filePath: relativePath },
-      include: tagsInclude(),
-    });
-    return res.status(201).json({ photo: toPhotoResponse(photo) });
   }
 );
 
@@ -133,14 +123,7 @@ treePhotosRouter.delete(
       where: { id: req.params.photoId, treeId: req.params.treeId },
     });
     if (!photo) return res.status(404).json({ error: "Photo not found" });
-    const fullPath = path.join(__dirname, "..", "..", photo.filePath);
-    try {
-      fs.unlinkSync(fullPath);
-    } catch (_) {}
-    try {
-      const dir = path.dirname(fullPath);
-      if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
-    } catch (_) {}
+    deletePhotoFiles(photo.filePath);
     await prisma.photo.delete({ where: { id: photo.id } });
     return res.status(204).send();
   }

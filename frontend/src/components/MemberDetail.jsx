@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { api, resolvePhotoUrl } from "../api";
-import { zIndex } from "../constants/zIndex";
+import { GenderIcon, GenderPicker } from "./icons";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
 import ConfirmModal from "./ConfirmModal";
 import DateField from "./DateField";
@@ -84,17 +84,6 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
     },
   });
 
-  const addRelationship = useMutation({
-    mutationFn: (body) => {
-      console.log("[family-tree addRelationship] frontend sending", JSON.stringify({ treeId, payload: body }));
-      return api.post(`/trees/${treeId}/relationships`, body);
-    },
-    onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ["relationships", treeId] });
-      queryClient.invalidateQueries({ queryKey: ["member", treeId, memberId] });
-    },
-  });
-
   const deleteMember = useMutation({
     mutationFn: () => api.delete(`/trees/${treeId}/members/${memberId}`),
     onSuccess: () => {
@@ -164,6 +153,15 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
       ) : (
         <>
           <h3 style={styles.name}>{member.name}</h3>
+          {member.gender && (
+            <p style={styles.gender} title={member.gender === "male" ? "Male" : "Female"} aria-label={member.gender === "male" ? "Male" : "Female"}>
+              {member.gender === "male" ? (
+                <GenderIcon variant="male" size={18} />
+              ) : (
+                <GenderIcon variant="female" size={18} />
+              )}
+            </p>
+          )}
           {(member.birthDate || member.deathDate) && (
             <p style={styles.dates}>
               {member.birthDate ? new Date(member.birthDate).toLocaleDateString() : "?"}
@@ -248,14 +246,6 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
               })}
             </ul>
           )}
-          {canEdit && (
-            <AddRelationshipForm
-              treeId={treeId}
-              currentMemberId={memberId}
-              onSubmit={(body) => addRelationship.mutate(body)}
-              isPending={addRelationship.isPending}
-            />
-          )}
         </>
       )}
     </aside>
@@ -265,6 +255,7 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
 function MemberEditForm({ member, onSave, onCancel, saving }) {
   const isDeceased = member.deathDate != null && !isAliveSentinel(member.deathDate);
   const [name, setName] = useState(member.name);
+  const [gender, setGender] = useState(member.gender ?? "");
   const [birthDate, setBirthDate] = useState(
     member.birthDate ? new Date(member.birthDate).toISOString().slice(0, 10) : ""
   );
@@ -278,6 +269,7 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
     e.preventDefault();
     onSave({
       name,
+      gender: gender || null,
       birthDate: birthDate || null,
       deceased,
       deathDate: deceased ? (deathDate || null) : null,
@@ -294,6 +286,15 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
         required
         style={styles.input}
       />
+      <div style={styles.formField}>
+        <span style={styles.formLabel}>Gender</span>
+        <GenderPicker
+          id="edit-member-gender"
+          aria-label="Gender"
+          value={gender}
+          onChange={setGender}
+        />
+      </div>
       <textarea
         value={bio}
         onChange={(e) => setBio(e.target.value)}
@@ -337,124 +338,6 @@ function MemberEditForm({ member, onSave, onCancel, saving }) {
           {saving ? "Saving..." : "Save"}
         </button>
       </div>
-    </form>
-  );
-}
-
-const DEBOUNCE_MS = 300;
-
-function AddRelationshipForm({ treeId, currentMemberId, onSubmit, isPending }) {
-  const [otherId, setOtherId] = useState("");
-  const [selectedMemberName, setSelectedMemberName] = useState("");
-  const [type, setType] = useState("spouse");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(searchQuery), DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
-
-  const searchTerm = debouncedQuery.trim();
-  const { data: searchData } = useQuery({
-    queryKey: ["members", "search", treeId, searchTerm],
-    queryFn: async () => {
-      const { data } = await api.get(`/trees/${treeId}/members/search`, {
-        params: { q: searchTerm },
-      });
-      return data;
-    },
-    enabled: !!treeId && searchTerm.length >= 3,
-  });
-
-  const searchResults = searchData?.members ?? [];
-  const others = searchResults.filter((m) => m.id !== currentMemberId);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!otherId) return;
-    if (type === "parent") {
-      onSubmit({ memberAId: currentMemberId, memberBId: otherId, type: "parent" });
-    } else {
-      onSubmit({ memberAId: currentMemberId, memberBId: otherId, type });
-    }
-    setOtherId("");
-    setSelectedMemberName("");
-    setSearchQuery("");
-    setDebouncedQuery("");
-  };
-
-  const handleSelectMember = (m) => {
-    setOtherId(m.id);
-    setSelectedMemberName(m.name);
-    setSearchQuery("");
-  };
-
-  const handleClearSelection = () => {
-    setOtherId("");
-    setSelectedMemberName("");
-    setSearchQuery("");
-  };
-
-  const showList = !otherId && (searchQuery.length > 0 || others.length > 0);
-
-  return (
-    <form onSubmit={handleSubmit} style={styles.addRelForm}>
-      <h4 style={styles.relsTitle}>Add relationship</h4>
-      <div style={styles.searchWrap}>
-        {otherId && selectedMemberName ? (
-          <div style={styles.selectedRow}>
-            <span style={styles.selectedName}>{selectedMemberName}</span>
-            <button
-              type="button"
-              onClick={handleClearSelection}
-              style={styles.clearSelectionBtn}
-            >
-              Change
-            </button>
-          </div>
-        ) : (
-          <>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name..."
-              style={styles.input}
-              autoComplete="off"
-            />
-            {showList && (
-              <ul style={styles.searchResults}>
-                {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 ? (
-                  <li style={styles.searchResultItemMuted}>Type at least 3 characters to search</li>
-                ) : others.length === 0 ? (
-                  <li style={styles.searchResultItemMuted}>No matches</li>
-                ) : (
-                  others.map((m) => (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        style={styles.searchResultItem}
-                        onClick={() => handleSelectMember(m)}
-                      >
-                        {m.name}
-                      </button>
-                    </li>
-                  ))
-                )}
-              </ul>
-            )}
-          </>
-        )}
-      </div>
-      <select value={type} onChange={(e) => setType(e.target.value)} style={styles.input}>
-        <option value="parent">Child (this person is the parent)</option>
-        <option value="spouse">Spouse</option>
-        <option value="sibling">Sibling</option>
-      </select>
-      <button type="submit" disabled={isPending || !otherId} style={styles.saveBtn}>
-        {isPending ? "Adding..." : "Add"}
-      </button>
     </form>
   );
 }
@@ -517,8 +400,11 @@ const styles = {
   },
   removePhotoBtn: { background: "none", border: "none", color: "#b91c1c", fontSize: 13 },
   name: { margin: "0 0 8px", textAlign: "center" },
+  gender: { margin: "0 0 4px", display: "flex", justifyContent: "center", color: "#6b7280" },
   dates: { margin: "0 0 12px", fontSize: 14, color: "#6b7280", textAlign: "center" },
   bio: { margin: "0 0 12px", fontSize: 14, lineHeight: 1.5 },
+  formField: { display: "flex", flexDirection: "column", gap: 4 },
+  formLabel: { fontSize: 14, fontWeight: 500, color: "#374151" },
   editDeleteRow: { display: "flex", gap: 8, marginBottom: 16 },
   editBtn: {
     flex: 1,
@@ -564,14 +450,6 @@ const styles = {
     transition: "background-color 0.15s ease, color 0.15s ease",
   },
   relsTitle: { margin: "0 0 8px", fontSize: 14 },
-  addRelForm: { marginTop: 12, paddingTop: 12, borderTop: "1px solid #eee", display: "flex", flexDirection: "column", gap: 8 },
-  searchWrap: { position: "relative" },
-  selectedRow: { display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, background: "#f9fafb" },
-  selectedName: { flex: 1, fontSize: 14 },
-  clearSelectionBtn: { background: "none", border: "none", color: "#2563eb", fontSize: 13, cursor: "pointer" },
-  searchResults: { listStyle: "none", margin: "4px 0 0", padding: 4, border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 200, overflowY: "auto", position: "relative", zIndex: zIndex.dropdown },
-  searchResultItem: { display: "block", width: "100%", padding: "8px 12px", textAlign: "left", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14, color: "#374151" },
-  searchResultItemMuted: { padding: "8px 12px", fontSize: 14, color: "#9ca3af" },
   muted: { margin: 0, fontSize: 13, color: "#6b7280" },
   relsList: { listStyle: "none", margin: 0, padding: 0 },
   relItem: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 14 },

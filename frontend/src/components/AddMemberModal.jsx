@@ -4,10 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Modal from "./Modal";
 import DateField from "./DateField";
+import { GenderPicker } from "./icons";
 
 const schema = z
   .object({
     name: z.string().min(1, "Name is required").max(200),
+    gender: z.enum(["male", "female", "unspecified"]).optional(),
     birthDate: z.string().optional().or(z.literal("")),
     deceased: z.boolean(),
     deathDate: z.string().optional().or(z.literal("")),
@@ -51,7 +53,7 @@ const formStyles = {
   },
 };
 
-const defaultValues = { name: "", birthDate: "", deceased: false, deathDate: "", bio: "" };
+const defaultValues = { name: "", gender: "unspecified", birthDate: "", deceased: false, deathDate: "", bio: "" };
 
 export default function AddMemberModal({ open, onClose, onSubmit, isPending, linkContext }) {
   const {
@@ -90,6 +92,7 @@ export default function AddMemberModal({ open, onClose, onSubmit, isPending, lin
   const onFormSubmit = (data) => {
     onSubmit({
       name: data.name.trim(),
+      gender: data.gender && data.gender !== "unspecified" ? data.gender : null,
       birthDate: data.birthDate?.trim() || null,
       deceased: !!data.deceased,
       deathDate: data.deceased ? (data.deathDate?.trim() || null) : null,
@@ -128,6 +131,23 @@ export default function AddMemberModal({ open, onClose, onSubmit, isPending, lin
           <span style={formStyles.error}>{errors.name.message}</span>
         )}
       </div>
+      <Controller
+        name="gender"
+        control={control}
+        render={({ field }) => (
+          <div style={formStyles.field}>
+            <label style={formStyles.label}>
+              Gender
+            </label>
+            <GenderPicker
+              id="add-member-gender"
+              aria-label="Gender"
+              value={field.value === "unspecified" ? "" : field.value}
+              onChange={(v) => field.onChange(v || "unspecified")}
+            />
+          </div>
+        )}
+      />
       <div style={formStyles.field}>
         <label htmlFor="add-member-bio" style={formStyles.label}>
           Bio (optional)

@@ -11,9 +11,11 @@ membersRouter.use(authMiddleware);
 const dateOptional = z.union([z.string().datetime(), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional().nullable();
 const ALIVE_SENTINEL = new Date("9999-12-31");
 
+const GENDER_VALUES = ["male", "female", "unspecified"];
 const RELATIONSHIP_TYPES = ["parent", "spouse", "sibling"];
 const createMemberSchema = z.object({
   name: z.string().min(1).max(200),
+  gender: z.enum(GENDER_VALUES).optional().nullable(),
   birthDate: dateOptional,
   deathDate: dateOptional,
   deceased: z.boolean().optional(),
@@ -71,6 +73,7 @@ membersRouter.post("/:treeId/members", requireEditor, async (req, res) => {
     data: {
       treeId,
       name: memberData.name,
+      gender: memberData.gender ?? null,
       birthDate: memberData.birthDate ? new Date(memberData.birthDate) : null,
       deathDate,
       bio: memberData.bio ?? null,
@@ -165,6 +168,7 @@ membersRouter.patch("/:treeId/members/:memberId", requireEditor, async (req, res
   if (!member) return res.status(404).json({ error: "Member not found" });
   const data = {};
   if (parsed.data.name != null) data.name = parsed.data.name;
+  if (parsed.data.gender !== undefined) data.gender = parsed.data.gender ?? null;
   if (parsed.data.birthDate != null) data.birthDate = parsed.data.birthDate ? new Date(parsed.data.birthDate) : null;
   if (parsed.data.deceased !== undefined) {
     data.deathDate = parsed.data.deceased === true && parsed.data.deathDate

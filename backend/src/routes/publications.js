@@ -1,17 +1,9 @@
 import { Router } from "express";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 import multer from "multer";
 import { prisma } from "../db.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireTreeAccess, requireEditor } from "../middleware/treeAccess.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, "..", "..", "uploads", "trees");
-try {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-} catch (_) {}
+import { processAndSave, deletePhotoFiles } from "../services/imageStorage.js";
 
 const memoryUpload = multer({
   storage: multer.memoryStorage(),
@@ -108,28 +100,26 @@ publicationsRouter.post(
 
     let photoId = null;
     if (req.file) {
-      const ext = path.extname(req.file.originalname)?.toLowerCase() || ".jpg";
-      const safeExt = /\.(jpe?g|png|gif|webp)$/.test(ext) ? ext : ".jpg";
       const photoCaption = typeof req.body.caption === "string" ? req.body.caption.trim() || null : content;
       const createdPhoto = await prisma.photo.create({
         data: { treeId, filePath: "/temp", caption: photoCaption },
       });
       const id = createdPhoto.id;
-      const filename = `photo${safeExt}`;
-      const relativePath = `/uploads/trees/${treeId}/photos/${id}/${filename}`;
-      const dir = path.join(uploadsDir, treeId, "photos", id);
       try {
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, filename), req.file.buffer);
+        const { filePath } = await processAndSave(req.file.buffer, {
+          treeId,
+          id,
+          type: "photo",
+        });
+        await prisma.photo.update({
+          where: { id },
+          data: { filePath },
+        });
+        photoId = id;
       } catch (err) {
         await prisma.photo.delete({ where: { id } });
         throw err;
       }
-      await prisma.photo.update({
-        where: { id },
-        data: { filePath: relativePath },
-      });
-      photoId = id;
     }
 
     const publication = await prisma.publication.create({
@@ -199,14 +189,7 @@ publicationsRouter.delete(
       return res.status(403).json({ error: "Only the creator of this post can delete it" });
     }
     if (pub.photo) {
-      const fullPath = path.join(__dirname, "..", "..", pub.photo.filePath);
-      try {
-        fs.unlinkSync(fullPath);
-      } catch (_) {}
-      try {
-        const dir = path.dirname(fullPath);
-        if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
-      } catch (_) {}
+      deletePhotoFiles(pub.photo.filePath);
       await prisma.photo.delete({ where: { id: pub.photo.id } });
     }
     await prisma.publication.delete({ where: { id: pub.id } });

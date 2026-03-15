@@ -42,6 +42,7 @@ model Member {
   id        String    @id @default(cuid())
   treeId    String    @map("tree_id")
   name      String
+  gender    String?   @map("gender")   // "male" | "female" | "unspecified"
   birthDate DateTime? @map("birth_date")
   deathDate DateTime? @map("death_date")
   bio       String?
