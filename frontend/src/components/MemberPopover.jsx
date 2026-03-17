@@ -38,7 +38,7 @@ export default function MemberPopover({ treeId, memberId, canEdit, onClose, onDe
     [anchorRect]
   );
 
-  const { refs, floatingStyles } = useFloating({
+  const { refs, floatingStyles, isPositioned } = useFloating({
     open: !!memberId && !!anchorRect,
     placement: "bottom-start",
     middleware: [offset(10), flip(), shift({ padding: 8 })],
@@ -75,15 +75,17 @@ export default function MemberPopover({ treeId, memberId, canEdit, onClose, onDe
       role="dialog"
       aria-labelledby="member-popover-title"
     >
-      <MemberDetail
-        treeId={treeId}
-        memberId={memberId}
-        canEdit={canEdit}
-        onClose={onClose}
-        onDeleted={onDeleted}
-        onRequestDelete={onRequestDelete}
-        placement="popover"
-      />
+      {isPositioned !== false && typeof floatingStyles.left === "number" ? (
+        <MemberDetail
+          treeId={treeId}
+          memberId={memberId}
+          canEdit={canEdit}
+          onClose={onClose}
+          onDeleted={onDeleted}
+          onRequestDelete={onRequestDelete}
+          placement="popover"
+        />
+      ) : null}
     </div>,
     document.body
   );

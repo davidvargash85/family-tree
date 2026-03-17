@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { api, resolvePhotoUrl } from "../api";
 import { GenderIcon, GenderPicker } from "./icons";
 import { isAliveSentinel, formatDeathDate } from "../utils/memberDates";
@@ -32,6 +32,10 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [hoveredRemoveRelId, setHoveredRemoveRelId] = useState(null);
+  const [photoHovered, setPhotoHovered] = useState(false);
+  const [photoTrashHovered, setPhotoTrashHovered] = useState(false);
+  const [deleteFooterHovered, setDeleteFooterHovered] = useState(false);
+  const photoInputRef = useRef(null);
 
   const { data: member, isLoading } = useQuery({
     queryKey: ["member", treeId, memberId],
@@ -107,40 +111,79 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
 
   return (
     <aside style={panelStyle}>
+      {canEdit && !editing && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setEditing(true)}
+          style={styles.editBtn}
+          title="Edit"
+          aria-label="Edit"
+        >
+          <Pencil size={16} />
+        </Button>
+      )}
       <Button type="button" variant="ghost" size="sm" onClick={onClose} style={styles.closeBtn} aria-label="Close">×</Button>
 
       <div style={styles.photoWrap}>
-        {member.photoUrl ? (
-          <img src={resolvePhotoUrl(member.photoUrl)} alt="" style={styles.photoImg} />
-        ) : (
-          <span style={styles.photoPlaceholder}>{member.name.charAt(0)}</span>
-        )}
-        {canEdit && (
-          <div style={styles.photoActions}>
-            <label style={styles.uploadLabel}>
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const form = new FormData();
-                  form.append("photo", file);
-                  await api.post(`/trees/${treeId}/members/${memberId}/photo`, form);
-                  queryClient.invalidateQueries({ queryKey: ["member", treeId, memberId] });
-                  queryClient.invalidateQueries({ queryKey: ["members", treeId] });
-                }}
-              />
-              Upload
-            </label>
-            {member.photoUrl && (
-              <Button type="button" variant="danger" size="sm" onClick={() => deletePhoto.mutate()}>
-                Remove
-              </Button>
+        <div
+          style={styles.photoThumbRow}
+          onMouseEnter={() => setPhotoHovered(true)}
+          onMouseLeave={() => setPhotoHovered(false)}
+        >
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const form = new FormData();
+              form.append("photo", file);
+              await api.post(`/trees/${treeId}/members/${memberId}/photo`, form);
+              queryClient.invalidateQueries({ queryKey: ["member", treeId, memberId] });
+              queryClient.invalidateQueries({ queryKey: ["members", treeId] });
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            style={{
+              ...styles.photoThumbWrap,
+              ...(photoHovered && canEdit ? styles.photoThumbWrapHover : {}),
+              cursor: canEdit ? "pointer" : "default",
+            }}
+            onClick={() => canEdit && photoInputRef.current?.click()}
+            disabled={!canEdit}
+            title={canEdit ? "Click to change photo" : undefined}
+            aria-label={canEdit ? "Change photo" : undefined}
+          >
+            {member.photoUrl ? (
+              <img src={resolvePhotoUrl(member.photoUrl)} alt="" style={styles.photoImg} />
+            ) : (
+              <span style={styles.photoPlaceholder}>{member.name.charAt(0)}</span>
             )}
-          </div>
-        )}
+          </button>
+          {canEdit && member.photoUrl && (
+            <div style={photoHovered ? styles.photoActionsColumnVisible : styles.photoActionsColumn}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); deletePhoto.mutate(); }}
+                onMouseEnter={() => setPhotoTrashHovered(true)}
+                onMouseLeave={() => setPhotoTrashHovered(false)}
+                title="Remove photo"
+                aria-label="Remove photo"
+                style={photoTrashHovered ? styles.photoTrashBtnHover : styles.photoTrashBtn}
+              >
+                <Trash2 size={16} />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {editing ? (
@@ -170,24 +213,6 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
             </p>
           )}
           {member.bio && <p style={styles.bio}>{member.bio}</p>}
-          {canEdit && (
-            <div style={styles.editDeleteRow}>
-              <Button type="button" variant="ghost" onClick={() => setEditing(true)} style={{ flex: 1 }}>
-                Edit
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                onClick={() => (onRequestDelete ? onRequestDelete(memberId) : setShowDeleteConfirm(true))}
-                title="Delete"
-                aria-label="Delete"
-                style={{ flex: 1, minWidth: 0 }}
-              >
-                <Trash2 size={16} />
-              </Button>
-            </div>
-          )}
 
           {showDeleteConfirm && (
             <ConfirmModal
@@ -245,6 +270,21 @@ export default function MemberDetail({ treeId, memberId, canEdit, onClose, onDel
                 );
               })}
             </ul>
+          )}
+          {canEdit && (
+            <div style={styles.deleteFooter}>
+              <button
+                type="button"
+                onClick={() => (onRequestDelete ? onRequestDelete(memberId) : setShowDeleteConfirm(true))}
+                onMouseEnter={() => setDeleteFooterHovered(true)}
+                onMouseLeave={() => setDeleteFooterHovered(false)}
+                title="Remove family member"
+                aria-label="Remove family member"
+                style={deleteFooterHovered ? styles.deleteFooterBtnHover : styles.deleteFooterBtn}
+              >
+                Delete family member
+              </button>
+            </div>
           )}
         </>
       )}
@@ -372,13 +412,42 @@ const styles = {
     lineHeight: 1,
     cursor: "pointer",
   },
-  photoWrap: { textAlign: "center", marginBottom: 12 },
+  photoWrap: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  /* Row is hover target; image stays centered in card; delete is absolute to the right of image */
+  photoThumbRow: {
+    position: "relative",
+    width: 120,
+    minHeight: 80,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "visible",
+  },
+  photoThumbWrap: {
+    position: "relative",
+    padding: 0,
+    border: "2px solid transparent",
+    borderRadius: "50%",
+    background: "none",
+    flexShrink: 0,
+    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  },
+  photoThumbWrapHover: {
+    border: "2px solid #93c5fd",
+    boxShadow: "0 2px 8px rgba(59, 130, 246, 0.25)",
+  },
   photoImg: {
     width: 80,
     height: 80,
     borderRadius: "50%",
     objectFit: "cover",
     background: "#e5e7eb",
+    display: "block",
   },
   photoPlaceholder: {
     display: "inline-flex",
@@ -392,62 +461,90 @@ const styles = {
     fontWeight: 600,
     color: "#6b7280",
   },
-  photoActions: { marginTop: 8, display: "flex", gap: 8, justifyContent: "center" },
-  uploadLabel: {
-    cursor: "pointer",
-    fontSize: 13,
-    color: "#2563eb",
+  /* Absolute to the right of the image; vertically centered; opacity 0 until hover; z-index so it appears above */
+  photoActionsColumn: {
+    position: "absolute",
+    left: 108,
+    top: "50%",
+    transform: "translateY(-50%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 28,
+    minHeight: 28,
+    opacity: 0,
+    pointerEvents: "none",
+    transition: "opacity 0.15s ease",
+    zIndex: 1,
   },
-  removePhotoBtn: { background: "none", border: "none", color: "#b91c1c", fontSize: 13 },
+  photoActionsColumnVisible: {
+    position: "absolute",
+    left: 108,
+    top: "50%",
+    transform: "translateY(-50%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 28,
+    minHeight: 28,
+    opacity: 1,
+    pointerEvents: "auto",
+    transition: "opacity 0.15s ease",
+    zIndex: 1,
+  },
+  /* Match TreeGraph MemberNode delete: light red tint on hover, red icon (not solid red background) */
+  photoTrashBtn: {
+    minWidth: 0,
+    padding: 4,
+    backgroundColor: "transparent",
+    color: "#6b7280",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
+  photoTrashBtnHover: {
+    minWidth: 0,
+    padding: 4,
+    backgroundColor: "rgba(185, 28, 28, 0.12)",
+    color: "#b91c1c",
+    border: "none",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
   name: { margin: "0 0 8px", textAlign: "center" },
   gender: { margin: "0 0 4px", display: "flex", justifyContent: "center", color: "#6b7280" },
   dates: { margin: "0 0 12px", fontSize: 14, color: "#6b7280", textAlign: "center" },
   bio: { margin: "0 0 12px", fontSize: 14, lineHeight: 1.5 },
   formField: { display: "flex", flexDirection: "column", gap: 4 },
   formLabel: { fontSize: 14, fontWeight: 500, color: "#374151" },
-  editDeleteRow: { display: "flex", gap: 8, marginBottom: 16 },
   editBtn: {
-    flex: 1,
-    padding: 8,
-    background: "#f3f4f6",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
+    position: "absolute",
+    top: 8,
+    left: 8,
+    minWidth: 0,
+    padding: 4,
   },
-  deleteBtn: {
-    flex: 1,
-    padding: 8,
-    background: "none",
-    border: "1px solid #b91c1c",
-    borderRadius: 8,
-    color: "#b91c1c",
-    cursor: "pointer",
+  deleteFooter: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTop: "1px solid #e5e7eb",
   },
-  deleteBtnIcon: {
-    flex: 1,
-    padding: 8,
+  deleteFooterBtn: {
+    padding: 0,
     border: "none",
     background: "none",
-    borderRadius: 6,
-    cursor: "pointer",
+    fontSize: 13,
     color: "#6b7280",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "background-color 0.15s ease, color 0.15s ease",
-  },
-  deleteBtnIconDanger: {
-    flex: 1,
-    padding: 8,
-    border: "none",
-    borderRadius: 6,
     cursor: "pointer",
-    backgroundColor: "rgba(185, 28, 28, 0.12)",
+    textDecoration: "none",
+    transition: "color 0.15s ease",
+  },
+  deleteFooterBtnHover: {
+    padding: 0,
+    border: "none",
+    background: "none",
+    fontSize: 13,
     color: "#b91c1c",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "background-color 0.15s ease, color 0.15s ease",
+    cursor: "pointer",
+    textDecoration: "none",
+    transition: "color 0.15s ease",
   },
   relsTitle: { margin: "0 0 8px", fontSize: 14 },
   muted: { margin: 0, fontSize: 13, color: "#6b7280" },
